@@ -75,7 +75,7 @@ export default function ChatPage() {
   const loadConversations = async (uid: string) => {
     const { data: msgs } = await supabase
       .from('messages')
-      .select('from_user_id, to_user_id, message, created_at')
+      .select('from_user_id, to_user_id, content, created_at')
       .or(`from_user_id.eq.${uid},to_user_id.eq.${uid}`)
       .order('created_at', { ascending: false });
 
