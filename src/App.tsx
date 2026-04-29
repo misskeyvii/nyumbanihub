@@ -8,7 +8,6 @@ export const DarkModeContext = createContext({ dark: false, toggle: () => {} });
 export const useDarkMode = () => useContext(DarkModeContext);
 
 function BackButtonHandler() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [backPressCount, setBackPressCount] = useState(0);
   const [showExitPrompt, setShowExitPrompt] = useState(false);
