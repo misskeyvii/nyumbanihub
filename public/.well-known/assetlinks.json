@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.nyumbanihub.app",
+      "sha256_cert_fingerprints": [
+        "94:6E:95:96:6D:B9:FF:4B:9D:2A:A6:78:D9:1A:8C:44:DD:90:95:F7:19:0D:07:47:99:6C:2A:8C:79:36:A2:76"
+      ]
+    }
+  }
+]

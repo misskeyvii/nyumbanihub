@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /kelly
+Disallow: /marketer
+Disallow: /profile
+Disallow: /chat
+Disallow: /post-listing
+Disallow: /auth/callback
+
+Sitemap: https://mabidha.vercel.app/sitemap.xml
