@@ -10,9 +10,11 @@ export default function Footer() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;
+    const sanitized = email.trim().toLowerCase().replace(/[<>"']/g, '');
+    if (!sanitized.match(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)) return;
     setStatus('loading');
     try {
-      const body = new URLSearchParams({ email });
+      const body = new URLSearchParams({ email: sanitized });
       const res = await fetch(FORM_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
