@@ -44,11 +44,12 @@ export default function MobileBottomNav() {
   // Realtime: listen for new incoming messages
   useEffect(() => {
     if (!isLoggedIn) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) return;
       const uid = data.session.user.id;
-      const channel = supabase
-        .channel('unread-badge')
+      channel = supabase
+        .channel(`unread-badge-${uid}`)
         .on('postgres_changes', {
           event: 'INSERT',
           schema: 'public',
@@ -56,8 +57,8 @@ export default function MobileBottomNav() {
           filter: `to_user_id=eq.${uid}`,
         }, () => setUnread(true))
         .subscribe();
-      return () => supabase.removeChannel(channel);
     });
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, [isLoggedIn]);
 
   // Clear badge when user opens chat
