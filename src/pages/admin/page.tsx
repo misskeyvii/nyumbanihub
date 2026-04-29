@@ -111,7 +111,7 @@ export default function AdminPage() {
     const { data } = await supabase
       .from('users')
       .select('id, name, email, phone, county, area, account_type, extra_account_types, role, is_active, subscription_expires_at, created_at')
-      .neq('role', 'admin').neq('role', 'marketer')
+      .not('role', 'in', '(admin,marketer)')
       .order('created_at', { ascending: false });
     setUsers(data || []);
     setLoading(false);
@@ -122,7 +122,8 @@ export default function AdminPage() {
       .from('users')
       .select('id, name, email, phone, county, area, account_type, role, is_active, subscription_expires_at, created_at')
       .eq('role', 'marketer')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .throwOnError();
     setMarketers(data || []);
   };
 
@@ -131,7 +132,8 @@ export default function AdminPage() {
       .from('users')
       .select('id, name, email, phone, county, area, account_type, role, is_active, subscription_expires_at, created_at')
       .eq('role', 'admin')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .throwOnError();
     setAdmins(data || []);
   };
 
