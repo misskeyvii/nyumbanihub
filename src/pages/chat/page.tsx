@@ -9,7 +9,7 @@ type Message = {
   from_user_id: string;
   to_user_id: string;
   listing_id: string | null;
-  message: string;
+  content: string;
   created_at: string;
 };
 
@@ -95,7 +95,7 @@ export default function ChatPage() {
         name: partner?.name || 'Unknown',
         account_type: partner?.account_type || '',
         avatar_url: partner?.avatar_url || null,
-        last_message: lastMsg?.message || '',
+        last_message: lastMsg?.content || '',
         last_at: lastMsg?.created_at || '',
       };
     });
@@ -138,7 +138,7 @@ export default function ChatPage() {
     const { data } = await supabase.from('messages').insert({
       from_user_id: myId,
       to_user_id: activeConv.user_id,
-      message: text.trim(),
+      content: text.trim(),
     }).select().single();
     if (data) {
       setMessages(prev => [...prev, data]);
@@ -226,7 +226,7 @@ export default function ChatPage() {
                   return (
                     <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm ${isMine ? 'bg-emerald-600 text-white rounded-br-sm' : 'bg-gray-100 text-gray-800 rounded-bl-sm'}`}>
-                        <p>{msg.message}</p>
+                        <p>{msg.content}</p>
                         <p className={`text-[10px] mt-1 ${isMine ? 'text-emerald-200' : 'text-gray-400'}`}>
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
