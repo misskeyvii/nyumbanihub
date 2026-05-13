@@ -196,6 +196,14 @@ export default function AdminPage() {
     }
     await supabaseAdmin.from('pending_requests').update({ status: 'approved' }).eq('id', req.id);
 
+    // Increment promo slots used
+    const { data: slotConfig } = await supabaseAdmin.from('app_config').select('value').eq('key', 'promo_slots_used').single();
+    const currentUsed = parseInt(slotConfig?.value || '0');
+    const total = 200;
+    if (currentUsed < total) {
+      await supabaseAdmin.from('app_config').update({ value: String(currentUsed + 1) }).eq('key', 'promo_slots_used');
+    }
+
     // Send in-app notification to user
     await supabaseAdmin.from('users').update({ 
       has_notification: true,

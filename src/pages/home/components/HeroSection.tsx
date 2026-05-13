@@ -11,6 +11,7 @@ export default function HeroSection() {
   const [query, setQuery] = useState('');
   const [stats, setStats] = useState({ listings: 0, users: 0 });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [slotsLeft, setSlotsLeft] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,8 +24,14 @@ export default function HeroSection() {
     Promise.all([
       supabase.from('listings').select('id', { count: 'exact', head: true }).eq('status', 'live'),
       supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('role', 'user'),
-    ]).then(([{ count: listings }, { count: users }]) => {
+      supabase.from('app_config').select('key, value').in('key', ['promo_slots_total', 'promo_slots_used']),
+    ]).then(([{ count: listings }, { count: users }, { data: config }]) => {
       setStats({ listings: listings || 0, users: users || 0 });
+      if (config) {
+        const total = parseInt(config.find(c => c.key === 'promo_slots_total')?.value || '200');
+        const used = parseInt(config.find(c => c.key === 'promo_slots_used')?.value || '0');
+        setSlotsLeft(Math.max(0, total - used));
+      }
     });
   }, []);
 
@@ -63,6 +70,41 @@ export default function HeroSection() {
       {/* ── Content ── */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 w-full pt-16 pb-5 md:pt-28 md:pb-20">
         <div className="max-w-3xl mx-auto text-center">
+
+          {/* Promo Offer Banner */}
+          {slotsLeft !== null && slotsLeft > 0 && (
+            <div className="fade-slide-up mb-3 md:mb-5 inline-flex flex-col items-center gap-1">
+              <div className="inline-flex items-center gap-2 bg-amber-400/20 backdrop-blur-sm border border-amber-400/40 rounded-full px-4 py-1.5 animate-pulse">
+                <i className="ri-gift-fill text-amber-400 text-sm"></i>
+                <span className="text-amber-300 text-xs md:text-sm font-bold tracking-wide">🎉 Launch Offer — First 200 Businesses FREE!</span>
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1">
+                  <i className="ri-ticket-fill text-emerald-400 text-xs"></i>
+                  <span className="text-white font-bold text-xs md:text-sm">{slotsLeft}</span>
+                  <span className="text-white/70 text-xs">slots left out of 200</span>
+                </div>
+                {/* Progress bar */}
+                <div className="hidden md:flex items-center gap-1.5">
+                  <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-400 to-amber-400 rounded-full transition-all duration-500"
+                      style={{ width: `${((200 - slotsLeft) / 200) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-white/60 text-xs">{200 - slotsLeft} claimed</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {slotsLeft === 0 && (
+            <div className="fade-slide-up mb-3 md:mb-5">
+              <div className="inline-flex items-center gap-2 bg-rose-500/20 backdrop-blur-sm border border-rose-400/40 rounded-full px-4 py-1.5">
+                <i className="ri-close-circle-fill text-rose-400 text-sm"></i>
+                <span className="text-rose-300 text-xs md:text-sm font-bold">All 200 free slots have been claimed!</span>
+              </div>
+            </div>
+          )}
 
           {/* Verified pill */}
           <div className="fade-slide-up inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-emerald-400/30 rounded-full px-3 py-1 mb-2.5 md:mb-6 md:px-4 md:py-1.5">
