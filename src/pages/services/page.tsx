@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
@@ -56,6 +57,11 @@ export default function ServicesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
+      <SEO
+        title="Verified Services in Kenya — Mama Fua, Movers, Plumbers & More"
+        description="Hire background-checked, physically verified service providers in Kenya. Mama Fua, movers, caretakers, plumbers, electricians, security and more on Nyumbani Hub."
+        path="/services"
+      />
       <Navbar />
       <main className="pt-16">
         {/* Hero */}

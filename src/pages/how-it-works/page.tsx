@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
@@ -29,6 +30,11 @@ const faqs = [
 export default function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
+      <SEO
+        title="How It Works — Find Verified Homes & Services in Kenya"
+        description="Learn how Nyumbani Hub works. Browse free, check verification badges, contact owners directly and visit in person. Zero scams, 100% verified listings across Kenya."
+        path="/how-it-works"
+      />
       <Navbar />
       <main className="pt-16">
         {/* Hero */}

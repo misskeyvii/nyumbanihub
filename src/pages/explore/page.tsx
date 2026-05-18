@@ -1,5 +1,5 @@
+import SEO from '../../components/base/SEO';
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import Footer from '../../components/feature/Footer';
@@ -85,6 +85,11 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
+      <SEO
+        title="Explore Verified Listings in Kenya"
+        description="Browse verified homes, apartments, Airbnbs, hotels, shops and services across all 47 counties in Kenya. Filter by location, price and category on Nyumbani Hub."
+        path="/explore"
+      />
       <Navbar />
 
       {/* Fixed header with category tabs */}

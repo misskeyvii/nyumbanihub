@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
@@ -6,6 +7,11 @@ import Footer from '../../components/feature/Footer';
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
+      <SEO
+        title="Privacy Policy — Nyumbani Hub"
+        description="Read Nyumbani Hub's privacy policy. Learn how we collect, use and protect your personal data on nyumbanilink.com."
+        path="/privacy"
+      />
       <Navbar />
       <main className="pt-16">
         <div className="bg-emerald-700 px-4 py-12 text-center">

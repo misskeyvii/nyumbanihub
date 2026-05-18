@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import { useState } from 'react';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
@@ -32,6 +33,11 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans">
+      <SEO
+        title="Contact Us — Nyumbani Hub Support"
+        description="Get in touch with Nyumbani Hub. Report a scam, get help with your listing, or ask any question. We respond within 24 hours. support@nyumbanilink.com"
+        path="/contact"
+      />
       <Navbar />
       <main className="pt-16">
         <div className="bg-emerald-700 px-4 py-14 text-center">

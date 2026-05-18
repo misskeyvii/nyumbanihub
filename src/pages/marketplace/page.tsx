@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import { useState, useEffect } from 'react';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
@@ -30,6 +31,11 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
+      <SEO
+        title="Marketplace — Buy from Verified Shops in Kenya"
+        description="Shop from 100% verified physical shops across Kenya on Nyumbani Hub Marketplace. Electronics, fashion, food, furniture and more — every seller is traceable."
+        path="/marketplace"
+      />
       <Navbar />
       <main className="pt-16">
         {/* Hero Banner */}

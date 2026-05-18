@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
@@ -6,6 +7,11 @@ import Footer from '../../components/feature/Footer';
 export default function AntiScamPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
+      <SEO
+        title="Anti-Scam Policy — Nyumbani Hub"
+        description="Nyumbani Hub's anti-scam policy. Every listing is physically verified. Learn how we protect you from fraud and what to do if you encounter a scam on nyumbanilink.com."
+        path="/anti-scam"
+      />
       <Navbar />
       <main className="pt-16">
         <div className="bg-emerald-700 px-4 py-12 text-center">

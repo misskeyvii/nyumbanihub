@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
@@ -35,6 +36,11 @@ export default function EntertainmentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
+      <SEO
+        title="Entertainment Providers in Kenya — DJs, MCs, Catering & Sounds"
+        description="Hire verified DJs, MCs, catering services and sound systems for weddings, parties and corporate events across Kenya. All providers physically verified by Nyumbani Hub."
+        path="/entertainment"
+      />
       <Navbar />
       <main className="pt-16">
         {/* Hero */}

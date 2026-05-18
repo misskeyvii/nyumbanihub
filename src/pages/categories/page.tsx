@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
@@ -16,6 +17,11 @@ const subCategories: Record<string, string[]> = {
 export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
+      <SEO
+        title="All Categories — Homes, Airbnbs, Services & Marketplace in Kenya"
+        description="Browse all categories on Nyumbani Hub. Verified homes, apartments, Airbnbs, hotels, shops, services and marketplace products across all 47 counties in Kenya."
+        path="/categories"
+      />
       <Navbar />
       <main className="pt-16">
         {/* Hero */}

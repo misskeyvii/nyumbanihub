@@ -1,10 +1,30 @@
+# Nyumbani Hub — https://nyumbanilink.com
+# robots.txt
+
 User-agent: *
 Allow: /
+
+# Block private & user-specific routes
 Disallow: /kelly
 Disallow: /marketer
 Disallow: /profile
 Disallow: /chat
+Disallow: /auth/
 Disallow: /post-listing
-Disallow: /auth/callback
+Disallow: /edit-listing/
 
-Sitemap: https://mabidha.vercel.app/sitemap.xml
+# Allow major crawlers explicitly
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+# Sitemap
+Sitemap: https://nyumbanilink.com/sitemap.xml
