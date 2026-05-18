@@ -85,10 +85,10 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-3 mt-4">
               {[
-                { icon: 'ri-facebook-fill', href: 'https://facebook.com/nyumbanihub' },
-                { icon: 'ri-twitter-x-fill', href: 'https://twitter.com/nyumbanihub' },
-                { icon: 'ri-instagram-line', href: 'https://instagram.com/nyumbanihub' },
-                { icon: 'ri-tiktok-fill', href: 'https://tiktok.com/@nyumbanihub' },
+                { icon: 'ri-facebook-fill', href: 'https://www.facebook.com/profile.php?id=61570075493776' },
+                { icon: 'ri-twitter-x-fill', href: 'https://x.com/nyumbanilink' },
+                { icon: 'ri-instagram-line', href: 'https://www.instagram.com/nyumbani_link' },
+                { icon: 'ri-tiktok-fill', href: 'https://www.tiktok.com/@nyumbanilink' },
               ].map(({ icon, href }) => (
                 <a key={icon} href={href} target="_blank" rel="nofollow noreferrer" className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-emerald-600 hover:text-white text-gray-500 rounded-full transition-colors cursor-pointer">
                   <i className={`${icon} text-sm`}></i>
@@ -99,15 +99,17 @@ export default function Footer() {
 
           {/* Explore */}
           <div>
-            <h4 className="font-semibold text-gray-900 text-sm mb-3">
-              <a href="#explore" className="hover:text-emerald-600 transition-colors">Explore</a>
-            </h4>
+            <h4 className="font-semibold text-gray-900 text-sm mb-3">Explore</h4>
             <ul className="space-y-2">
-              {['Homes & Rentals', 'Airbnb Stays', 'Hotels', 'Services', 'Marketplace'].map((item) => (
-                <li key={item}>
-                  <a href="#" rel="nofollow" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">
-                    {item}
-                  </a>
+              {[
+                { label: 'Homes & Rentals', path: '/explore?category=homes' },
+                { label: 'Airbnb Stays', path: '/explore?category=airbnb' },
+                { label: 'Hotels', path: '/explore?category=hotels' },
+                { label: 'Services', path: '/services' },
+                { label: 'Marketplace', path: '/marketplace' },
+              ].map(({ label, path }) => (
+                <li key={label}>
+                  <Link to={path} className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{label}</Link>
                 </li>
               ))}
             </ul>
@@ -115,13 +117,11 @@ export default function Footer() {
 
           {/* Counties */}
           <div>
-            <h4 className="font-semibold text-gray-900 text-sm mb-3">
-              <a href="#counties" className="hover:text-emerald-600 transition-colors">Popular Counties</a>
-            </h4>
+            <h4 className="font-semibold text-gray-900 text-sm mb-3">Popular Counties</h4>
             <ul className="space-y-2">
               {['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Malindi'].map((c) => (
                 <li key={c}>
-                  <a href="#" rel="nofollow" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{c}</a>
+                  <Link to={`/explore?county=${c}`} className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{c}</Link>
                 </li>
               ))}
             </ul>
