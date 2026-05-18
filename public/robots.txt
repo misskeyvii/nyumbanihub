@@ -5,13 +5,12 @@ User-agent: *
 Allow: /
 
 # Block private & user-specific routes
-Disallow: /kelly
-Disallow: /marketer
 Disallow: /profile
 Disallow: /chat
 Disallow: /auth/
 Disallow: /post-listing
 Disallow: /edit-listing/
+Disallow: /marketer
 
 # Allow major crawlers explicitly
 User-agent: Googlebot
