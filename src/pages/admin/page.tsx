@@ -25,6 +25,7 @@ type PendingRequest = {
   user_name: string;
   business_name: string;
   account_type: string;
+  subcategory: string | null;
   phone: string | null;
   county: string | null;
   message: string | null;
@@ -173,6 +174,7 @@ export default function AdminPage() {
     let updateData: any = {
       ...(req.phone && { phone: req.phone }),
       ...(req.county && { county: req.county }),
+      ...(req.subcategory && { subcategory: req.subcategory }),
       subscription_expires_at: expiresAt.toISOString(),
     };
 
@@ -261,14 +263,16 @@ export default function AdminPage() {
     setAddingAdmin(true);
     setAdminError('');
     setAdminSuccess('');
-    const { data, error } = await supabase.auth.signUp({ email: adminForm.email, password: adminForm.password });
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email: adminForm.email, password: adminForm.password, email_confirm: true,
+    });
     if (error) { setAdminError(error.message); setAddingAdmin(false); return; }
     const userId = data.user?.id;
     if (userId) {
-      const { error: insertError } = await supabaseAdmin.from('users').insert({
+      const { error: insertError } = await supabaseAdmin.from('users').upsert({
         id: userId, name: adminForm.name, email: adminForm.email,
         phone: adminForm.phone || null, role: 'admin', is_active: true,
-      });
+      }, { onConflict: 'id' });
       if (insertError) { setAdminError(insertError.message); setAddingAdmin(false); return; }
     }
     setAdminSuccess(`Admin account created for ${adminForm.name}!`);
@@ -291,14 +295,16 @@ export default function AdminPage() {
     setAddingMarketer(true);
     setMarketerError('');
     setMarketerSuccess('');
-    const { data, error } = await supabase.auth.signUp({ email: marketerForm.email, password: marketerForm.password });
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email: marketerForm.email, password: marketerForm.password, email_confirm: true,
+    });
     if (error) { setMarketerError(error.message); setAddingMarketer(false); return; }
     const userId = data.user?.id;
     if (userId) {
-      const { error: insertError } = await supabaseAdmin.from('users').insert({
+      const { error: insertError } = await supabaseAdmin.from('users').upsert({
         id: userId, name: marketerForm.name, email: marketerForm.email,
         phone: marketerForm.phone || null, role: 'marketer', is_active: true,
-      });
+      }, { onConflict: 'id' });
       if (insertError) { setMarketerError(insertError.message); setAddingMarketer(false); return; }
     }
     setMarketerSuccess(`Marketer account created for ${marketerForm.name}!`);
@@ -321,17 +327,19 @@ export default function AdminPage() {
     setCreating(true);
     setCreateError('');
     setCreateSuccess('');
-    const { data, error: signUpError } = await supabase.auth.signUp({ email: form.email, password: form.password });
+    const { data, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+      email: form.email, password: form.password, email_confirm: true,
+    });
     if (signUpError) { setCreateError(signUpError.message); setCreating(false); return; }
     const userId = data.user?.id;
     if (userId) {
-      const { error: insertError } = await supabaseAdmin.from('users').insert({
+      const { error: insertError } = await supabaseAdmin.from('users').upsert({
         id: userId, name: form.name, email: form.email,
         phone: form.phone || null, county: form.county || null,
         area: form.area || null, account_type: form.account_type,
         subcategory: form.subcategory || null,
         role: 'user', is_active: true,
-      });
+      }, { onConflict: 'id' });
       if (insertError) { setCreateError(insertError.message); setCreating(false); return; }
     }
     setCreateSuccess(`Account created for ${form.name}!`);
@@ -757,7 +765,7 @@ export default function AdminPage() {
                     <p className="text-xs text-gray-400">{req.user_name} · {req.user_email}</p>
                     {req.phone && <p className="text-xs text-gray-400">{req.phone}</p>}
                     {req.county && <p className="text-xs text-gray-400">{req.county}</p>}
-                    <p className="text-xs text-gray-500 capitalize mt-1">Type: <span className="font-semibold">{req.account_type}</span></p>
+                    <p className="text-xs text-gray-500 capitalize mt-1">Type: <span className="font-semibold">{req.account_type}</span>{req.subcategory && <span className="ml-1 text-emerald-600">— {req.subcategory}</span>}</p>
                     {req.message && <p className="text-xs text-gray-400 mt-1 italic">"{req.message}"</p>}
                     <p className="text-[10px] text-gray-300 mt-1">{new Date(req.created_at).toLocaleDateString()}</p>
                   </div>

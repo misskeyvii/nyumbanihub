@@ -56,7 +56,7 @@ export default function ContactPage() {
               </p>
             </div>
             {[
-              { icon: 'ri-whatsapp-fill', label: 'WhatsApp', value: '+254 700 000 000', href: 'https://wa.me/254700000000', color: 'text-[#25D366]' },
+              { icon: 'ri-whatsapp-fill', label: 'WhatsApp', value: '+254 703 542 846', href: 'https://wa.me/254703542846', color: 'text-[#25D366]' },
               { icon: 'ri-mail-fill', label: 'Email', value: 'support@nyumbanihub.co.ke', href: 'mailto:support@nyumbanihub.co.ke', color: 'text-emerald-600' },
               { icon: 'ri-map-pin-2-fill', label: 'Location', value: 'Nairobi, Kenya', href: '#', color: 'text-rose-500' },
               { icon: 'ri-time-fill', label: 'Hours', value: 'Mon–Sat, 8am–6pm EAT', href: '#', color: 'text-amber-500' },

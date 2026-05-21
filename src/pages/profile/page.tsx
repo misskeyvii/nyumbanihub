@@ -29,7 +29,7 @@ export default function ProfilePage() {
   const [profileTab, setProfileTab] = useState<'listings' | 'favorites' | 'request'>('listings');
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [removingFavId, setRemovingFavId] = useState<string | null>(null);
-  const [requestForm, setRequestForm] = useState({ business_name: '', account_type: '', phone: '', county: '', message: '' });
+  const [requestForm, setRequestForm] = useState({ business_name: '', account_type: '', phone: '', county: '', message: '', subcategory: '' });
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [requestError, setRequestError] = useState('');
@@ -226,6 +226,7 @@ export default function ProfilePage() {
       user_name: userName,
       business_name: requestForm.business_name,
       account_type: requestForm.account_type,
+      subcategory: requestForm.subcategory || null,
       phone: requestForm.phone || null,
       county: requestForm.county || null,
       message: requestForm.message || null,
@@ -574,11 +575,29 @@ export default function ProfilePage() {
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-gray-500 block mb-1.5">Account Type *</label>
-                      <select value={requestForm.account_type} onChange={e => setRequestForm({ ...requestForm, account_type: e.target.value })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
+                      <select value={requestForm.account_type} onChange={e => setRequestForm({ ...requestForm, account_type: e.target.value, subcategory: '' })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
                         <option value="">Select type</option>
                         {['landlord', 'airbnb', 'hotel', 'shop', 'marketplace', 'service', 'entertainment'].map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
+                    {requestForm.account_type === 'service' && (
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1.5">Service Type *</label>
+                        <select value={requestForm.subcategory} onChange={e => setRequestForm({ ...requestForm, subcategory: e.target.value })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
+                          <option value="">Select service type</option>
+                          {['Mama Fua', 'Movers', 'Caretakers', 'Plumbing', 'Electricians', 'Security', 'Landscaping', 'Painting', 'Gas Delivery', 'Dispenser Water'].map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    {requestForm.account_type === 'entertainment' && (
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1.5">Entertainment Type *</label>
+                        <select value={requestForm.subcategory} onChange={e => setRequestForm({ ...requestForm, subcategory: e.target.value })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
+                          <option value="">Select entertainment type</option>
+                          {['Sounds & PA', 'Catering', 'DJs', 'MCs'].map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    )}
                     <div>
                       <label className="text-xs font-semibold text-gray-500 block mb-1.5">Phone Number</label>
                       <input value={requestForm.phone} onChange={e => setRequestForm({ ...requestForm, phone: e.target.value })} type="tel" placeholder="+254 7XX XXX XXX" className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400" />

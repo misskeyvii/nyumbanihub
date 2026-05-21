@@ -33,8 +33,7 @@ export default function ServiceDetailPage() {
     const fetch = async () => {
       const { data } = await supabase
         .from('users')
-        .select('id, name, phone, county, area, subcategory, avatar_url, is_active')
-        .eq('account_type', 'service')
+        .select('id, name, phone, county, subcategory, avatar_url, is_active')
         .eq('subcategory', subcategory)
         .eq('is_active', true);
       setProviders(data || []);
@@ -117,10 +116,10 @@ export default function ServiceDetailPage() {
                   </div>
                   <div className="p-4">
                     <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1">{p.name}</h3>
-                    {(p.area || p.county) && (
+                    {p.county && (
                       <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
                         <i className="ri-map-pin-2-line text-emerald-500"></i>
-                        {[p.area, p.county].filter(Boolean).join(', ')}
+                        {p.county}
                       </p>
                     )}
                     <div className="grid grid-cols-2 gap-2">
