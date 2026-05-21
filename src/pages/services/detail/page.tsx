@@ -35,7 +35,8 @@ export default function ServiceDetailPage() {
         .from('users')
         .select('id, name, phone, county, subcategory, avatar_url, is_active')
         .eq('subcategory', subcategory)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .gt('subscription_expires_at', new Date().toISOString());
       setProviders(data || []);
       setLoading(false);
     };

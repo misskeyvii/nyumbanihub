@@ -39,7 +39,8 @@ export default function ServicesPage() {
         .from('users')
         .select('subcategory, account_type')
         .in('account_type', ['service', 'entertainment'])
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .gt('subscription_expires_at', new Date().toISOString());
       if (!data) return;
       const c: Record<string, number> = {};
       let svc = 0, ent = 0;

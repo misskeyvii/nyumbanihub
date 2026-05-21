@@ -19,7 +19,8 @@ export default function EntertainmentPage() {
         .from('users')
         .select('id, name, phone, county, subcategory, avatar_url, is_active')
         .eq('account_type', 'entertainment')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .gt('subscription_expires_at', new Date().toISOString());
       setProviders(data || []);
       setLoading(false);
     };

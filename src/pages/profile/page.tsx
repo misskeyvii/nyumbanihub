@@ -33,6 +33,15 @@ export default function ProfilePage() {
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [requestError, setRequestError] = useState('');
+  const [showRenew, setShowRenew] = useState(false);
+  const [renewStep, setRenewStep] = useState<'account' | 'months' | 'method' | 'mpesa' | 'airtel' | 'waiting'>('account');
+  const [renewPhone, setRenewPhone] = useState('');
+  const [renewing, setRenewing] = useState(false);
+  const [renewSuccess, setRenewSuccess] = useState(false);
+  const [renewAccountType, setRenewAccountType] = useState('');
+  const [renewMonths, setRenewMonths] = useState(1);
+  const [renewError, setRenewError] = useState('');
+  const [approvedTypes, setApprovedTypes] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
   const isNewUser = searchParams.get('new') === 'true';
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -99,6 +108,10 @@ export default function ProfilePage() {
       if (userData?.account_type !== undefined) {
         localStorage.setItem('accountType', userData.account_type || '');
       }
+      // Build approved account types list
+      const types = [userData?.account_type, ...(userData?.extra_account_types || [])].filter(Boolean) as string[];
+      setApprovedTypes(types);
+      if (types.length > 0) setRenewAccountType(types[0]);
       if (isServiceProvider) setPortfolio(contentData || []);
       else setListings(contentData || []);
       setLoading(false);
@@ -237,6 +250,44 @@ export default function ProfilePage() {
     setSubmittingRequest(false);
   };
 
+  const PRICING: Record<string, number> = {
+    landlord: 500, airbnb: 500, hotel: 500,
+    shop: 800, marketplace: 800,
+    service: 400, entertainment: 400,
+  };
+
+  const renewAmount = (PRICING[renewAccountType] || 500) * renewMonths;
+
+  const handleRenew = async () => {
+    if (!renewPhone.trim()) return;
+    setRenewing(true);
+    setRenewError('');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    try {
+      const { error } = await supabase.from('renewal_requests').insert({
+        user_id: session.user.id,
+        user_name: displayName,
+        user_email: session.user.email,
+        phone: renewPhone.trim(),
+        amount: renewAmount,
+        months: renewMonths,
+        account_type: renewAccountType,
+        payment_method: renewStep,
+        status: 'pending',
+      });
+      if (error) {
+        setRenewError('Failed to submit. Please try again.');
+        setRenewing(false);
+        return;
+      }
+      setRenewStep('waiting');
+    } catch {
+      setRenewError('Something went wrong. Please try again.');
+    }
+    setRenewing(false);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this listing? This cannot be undone.')) return;
     setDeletingId(id);
@@ -368,6 +419,14 @@ export default function ProfilePage() {
                   </p>
                 )}
                 <p className="text-xs text-gray-400 mt-1">Tap the camera icon to update your profile photo</p>
+                {subscriptionExpiresAt && (
+                  <button
+                    onClick={() => { setShowRenew(true); setRenewStep('account'); setRenewPhone(''); setRenewSuccess(false); setRenewError(''); setRenewMonths(1); if (approvedTypes.length === 1) { setRenewAccountType(approvedTypes[0]); } }}
+                    className="mt-2 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    <i className="ri-refresh-line text-xs"></i> Renew Account
+                  </button>
+                )}
               </div>
 
               {/* Profile completion indicator */}
@@ -788,7 +847,261 @@ export default function ProfilePage() {
       </main>
       <div className="h-16 md:hidden"></div>
       <MobileBottomNav />
+
+      {/* Renew Account Modal */}
+      {showRenew && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4 pb-4 sm:pb-0">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+
+            {/* SUCCESS */}
+            {renewSuccess && (
+              <div className="text-center py-4">
+                <div className="w-14 h-14 flex items-center justify-center bg-emerald-100 rounded-full mx-auto mb-3">
+                  <i className="ri-checkbox-circle-fill text-emerald-600 text-2xl"></i>
+                </div>
+                <p className="font-bold text-gray-900">Payment Confirmed!</p>
+                <p className="text-xs text-gray-400 mt-1">Your account has been renewed. It will be activated within a few minutes.</p>
+                <button onClick={() => { setShowRenew(false); setRenewSuccess(false); }} className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer whitespace-nowrap">Done</button>
+              </div>
+            )}
+
+            {/* WAITING FOR PIN */}
+            {!renewSuccess && renewStep === 'waiting' && (
+              <div className="text-center py-4 space-y-4">
+                <div className="w-14 h-14 flex items-center justify-center bg-emerald-100 rounded-full mx-auto">
+                  <i className="ri-checkbox-circle-fill text-emerald-600 text-2xl"></i>
+                </div>
+                <p className="font-bold text-gray-900">Request Received!</p>
+                <p className="text-sm text-gray-500">Please send <strong className="text-gray-900">KSh {renewAmount.toLocaleString()}</strong> to complete your renewal.</p>
+                <div className={`rounded-xl p-4 text-left space-y-2 ${ renewStep === 'waiting' ? 'bg-[#00A550]/10 border border-[#00A550]/20' : 'bg-[#E40000]/10 border border-[#E40000]/20'}`}>
+                  <p className="text-xs font-bold text-gray-700">Send KSh {renewAmount.toLocaleString()} via M-Pesa to:</p>
+                  <p className="text-sm font-black text-gray-900">📱 +254 703 542 846</p>
+                  <p className="text-xs text-gray-500">Name: <strong>Nyumbani Hub</strong></p>
+                  <p className="text-xs text-gray-400 mt-2">After paying, send your M-Pesa confirmation message to our WhatsApp:</p>
+                  <a
+                    href={`https://wa.me/254703542846?text=Hi, I have paid KSh ${renewAmount} for ${renewMonths} month(s) renewal of my ${renewAccountType} account. My number is ${renewPhone}.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba58] text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer w-full mt-2"
+                  >
+                    <i className="ri-whatsapp-fill text-lg"></i>
+                    Send Confirmation on WhatsApp
+                  </a>
+                </div>
+                <button onClick={() => { setShowRenew(false); setRenewSuccess(false); }} className="w-full text-sm text-gray-400 border border-gray-200 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">Close</button>
+              </div>
+            )}
+
+            {!renewSuccess && renewStep !== 'waiting' && (
+              <>
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {renewStep !== 'account' && (
+                      <button onClick={() => setRenewStep(renewStep === 'months' ? 'account' : renewStep === 'method' ? 'months' : renewStep === 'mpesa' ? 'method' : renewStep === 'airtel' ? 'method' : 'account')} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                        <i className="ri-arrow-left-s-line text-gray-600"></i>
+                      </button>
+                    )}
+                    <h2 className="font-bold text-gray-900 text-sm">
+                      {renewStep === 'account' && 'Select Account to Renew'}
+                      {renewStep === 'months' && 'How Many Months?'}
+                      {renewStep === 'method' && 'Payment Method'}
+                      {renewStep === 'mpesa' && 'Pay via M-Pesa'}
+                      {renewStep === 'airtel' && 'Pay via Airtel Money'}
+                    </h2>
+                  </div>
+                  <button onClick={() => setShowRenew(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                    <i className="ri-close-line text-gray-500"></i>
+                  </button>
+                </div>
+
+                {/* STEP 1 — Select account type */}
+                {renewStep === 'account' && (
+                  <div className="space-y-3">
+                    {approvedTypes.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">No approved accounts found. Request an account first.</p>
+                    ) : (
+                      <>
+                        <p className="text-xs text-gray-400">Select which listing account you want to renew.</p>
+                        <div className="space-y-2">
+                          {approvedTypes.map(type => (
+                            <button
+                              key={type}
+                              onClick={() => setRenewAccountType(type)}
+                              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all cursor-pointer ${
+                                renewAccountType === type ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100 bg-white hover:border-gray-200'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 flex items-center justify-center rounded-lg ${
+                                  renewAccountType === type ? 'bg-emerald-100' : 'bg-gray-100'
+                                }`}>
+                                  <i className={`${
+                                    type === 'service' || type === 'entertainment' ? 'ri-customer-service-2-line' :
+                                    type === 'shop' || type === 'marketplace' ? 'ri-store-2-line' : 'ri-home-4-line'
+                                  } text-sm ${renewAccountType === type ? 'text-emerald-600' : 'text-gray-500'}`}></i>
+                                </div>
+                                <div className="text-left">
+                                  <p className="text-sm font-bold text-gray-900 capitalize">{type}</p>
+                                  <p className="text-xs text-gray-400">KSh {(PRICING[type] || 500).toLocaleString()}/month</p>
+                                </div>
+                              </div>
+                              {renewAccountType === type && <i className="ri-checkbox-circle-fill text-emerald-500 text-lg"></i>}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => renewAccountType && setRenewStep('months')}
+                          disabled={!renewAccountType}
+                          className={`w-full font-bold text-sm py-3 rounded-xl transition-colors whitespace-nowrap ${
+                            renewAccountType ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          }`}
+                        >
+                          Continue
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* STEP 2 — Select months */}
+                {renewStep === 'months' && (
+                  <div className="space-y-4">
+                    <p className="text-xs text-gray-400">Pay for multiple months at once to keep your account active longer.</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[1,2,3,4,5,6,9,12].map(m => (
+                        <button
+                          key={m}
+                          onClick={() => setRenewMonths(m)}
+                          className={`py-2.5 rounded-xl border-2 text-sm font-bold transition-all cursor-pointer ${
+                            renewMonths === m ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-100 text-gray-600 hover:border-gray-200'
+                          }`}
+                        >
+                          {m}mo
+                        </button>
+                      ))}
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-gray-500 capitalize">{renewAccountType} × {renewMonths} month{renewMonths > 1 ? 's' : ''}</p>
+                          <p className="text-xs text-gray-400">KSh {(PRICING[renewAccountType] || 500).toLocaleString()} × {renewMonths}</p>
+                        </div>
+                        <p className="text-2xl font-black text-emerald-700">KSh {renewAmount.toLocaleString()}</p>
+                      </div>
+                      {renewMonths >= 3 && (
+                        <p className="text-xs text-emerald-600 font-semibold mt-2">
+                          <i className="ri-shield-check-line mr-1"></i>
+                          Account stays active for {renewMonths} months!
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setRenewStep('method')}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      Continue — Pay KSh {renewAmount.toLocaleString()}
+                    </button>
+                  </div>
+                )}
+
+                {/* STEP 3 — Choose payment method */}
+                {renewStep === 'method' && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-gray-400">Total: <strong className="text-gray-900">KSh {renewAmount.toLocaleString()}</strong> for {renewMonths} month{renewMonths > 1 ? 's' : ''}</p>
+                    <button
+                      onClick={() => setRenewStep('mpesa')}
+                      className="w-full flex items-center gap-3 bg-[#00A550] hover:bg-[#008f45] text-white font-bold text-sm px-4 py-4 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
+                        <img src="https://i.postimg.cc/nrmPqSKD/mpesa-seeklogo.png" alt="M-Pesa" className="w-8 h-auto object-contain" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="font-bold text-base">M-Pesa</p>
+                        <p className="text-xs text-white/80">Safaricom M-Pesa · Enter PIN on your phone</p>
+                      </div>
+                      <i className="ri-arrow-right-s-line text-xl"></i>
+                    </button>
+                    <button
+                      onClick={() => setRenewStep('airtel')}
+                      className="w-full flex items-center gap-3 bg-[#E40000] hover:bg-[#cc0000] text-white font-bold text-sm px-4 py-4 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
+                        <img src="https://i.postimg.cc/VLc73RBp/airtel-money-tanzania-seeklogo.png" alt="Airtel Money" className="w-8 h-auto object-contain" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="font-bold text-base">Airtel Money</p>
+                        <p className="text-xs text-white/80">Airtel Money Kenya · Enter PIN on your phone</p>
+                      </div>
+                      <i className="ri-arrow-right-s-line text-xl"></i>
+                    </button>
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-1">
+                      <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5"><i className="ri-information-line text-emerald-500"></i> How it works</p>
+                      <p className="text-xs text-gray-400">1. Select M-Pesa or Airtel Money below</p>
+                      <p className="text-xs text-gray-400">2. Enter the phone number registered to your mobile money</p>
+                      <p className="text-xs text-gray-400">3. A payment prompt appears on your phone</p>
+                      <p className="text-xs text-gray-400">4. Enter your PIN to confirm — done!</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4 — Enter phone & trigger STK */}
+                {(renewStep === 'mpesa' || renewStep === 'airtel') && (
+                  <div className="space-y-4">
+                    <div className={`rounded-xl p-3 ${
+                      renewStep === 'mpesa' ? 'bg-[#00A550]/10 border border-[#00A550]/20' : 'bg-[#E40000]/10 border border-[#E40000]/20'
+                    }`}>
+                      <p className="text-xs font-bold text-gray-700">Amount: <span className={renewStep === 'mpesa' ? 'text-[#00A550]' : 'text-[#E40000]'}>KSh {renewAmount.toLocaleString()}</span></p>
+                      <p className="text-xs text-gray-500 mt-0.5">{renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType} account</p>
+                    </div>
+                    {renewError && (
+                      <p className="text-xs text-rose-500 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{renewError}</p>
+                    )}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">
+                        Your {renewStep === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} Number *
+                      </label>
+                      <input
+                        value={renewPhone}
+                        onChange={e => setRenewPhone(e.target.value)}
+                        type="tel"
+                        placeholder="e.g. 0712345678"
+                        className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">A payment prompt will be sent to this number. Enter your PIN to pay.</p>
+                    </div>
+                    <button
+                      onClick={handleRenew}
+                      disabled={!renewPhone.trim() || renewing}
+                      className={`w-full font-bold text-sm py-4 rounded-xl transition-all ${
+                        renewStep === 'mpesa'
+                          ? 'bg-[#00A550] hover:bg-[#008f45] text-white shadow-lg shadow-[#00A550]/30'
+                          : 'bg-[#E40000] hover:bg-[#cc0000] text-white shadow-lg shadow-[#E40000]/30'
+                      } ${!renewPhone.trim() || renewing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      {renewing ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
+                          Submitting...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <img
+                            src={renewStep === 'mpesa' ? 'https://i.postimg.cc/nrmPqSKD/mpesa-seeklogo.png' : 'https://i.postimg.cc/VLc73RBp/airtel-money-tanzania-seeklogo.png'}
+                            alt={renewStep === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}
+                            className="w-5 h-5 object-contain flex-shrink-0"
+                          />
+                          <span>Pay KSh {renewAmount.toLocaleString()} via {renewStep === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}</span>
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
