@@ -60,7 +60,9 @@ export default function ProfilePage() {
   const userName = displayName;
   const userPhone = displayPhone;
   const accountType = localStorage.getItem('accountType') || '';
-  const isServiceProvider = SERVICE_TYPES.includes(accountType);
+  const isServiceProvider = approvedTypes.length > 0
+    ? approvedTypes.every(t => SERVICE_TYPES.includes(t))
+    : SERVICE_TYPES.includes(accountType);
   const isMarketer = userRole === 'marketer';
   const initials = userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
@@ -405,12 +407,21 @@ export default function ProfilePage() {
               <div className="flex-1">
                 <h1 className="font-bold text-gray-900 text-xl">{userName}</h1>
                 {userPhone && <p className="text-gray-500 text-sm mt-0.5">{userPhone}</p>}
-                {accountType && (
+                {approvedTypes.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {approvedTypes.map(type => (
+                      <span key={type} className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full capitalize">
+                        <i className="ri-verified-badge-fill text-xs"></i>
+                        {type}
+                      </span>
+                    ))}
+                  </div>
+                ) : accountType ? (
                   <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full mt-1 capitalize">
                     <i className="ri-verified-badge-fill text-xs"></i>
                     {accountType}
                   </span>
-                )}
+                ) : null}
                 {/* Per-account subscription expiry */}
                 {approvedTypes.length > 0 && (
                   <div className="mt-1 space-y-0.5">
