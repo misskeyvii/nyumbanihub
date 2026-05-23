@@ -66,11 +66,13 @@ export default function PostListingPage() {
     });
   }, []);
 
-  // Combine all allowed listing types from primary + extra account types
+  // Combine all allowed listing types — computed from state (always fresh from DB)
   const allAccountTypes = [accountType, ...extraAccountTypes].filter(Boolean);
-  const allowedTypes = allAccountTypes.length > 0
-    ? allAccountTypes.flatMap(at => accountTypeMap[at] ?? [])
-    : null;
+  const allowedTypes = !authChecked
+    ? null // still loading — don't restrict yet
+    : allAccountTypes.length > 0
+      ? allAccountTypes.flatMap(at => accountTypeMap[at] ?? [])
+      : null;
 
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedType, setSelectedType] = useState('');
@@ -114,7 +116,10 @@ export default function PostListingPage() {
     );
   }
 
-  if (allAccountTypes.every(t => ['service', 'entertainment'].includes(t)) && allAccountTypes.length > 0 || userRole === 'marketer') {
+  // Only block if ALL account types are service/entertainment AND DB data is confirmed
+  const isServiceOnlyUser = authChecked && allAccountTypes.length > 0 && allAccountTypes.every(t => ['service', 'entertainment'].includes(t));
+
+  if (isServiceOnlyUser || userRole === 'marketer') {
     const isMarketer = userRole === 'marketer';
     return (
       <div className="min-h-screen bg-gray-50 font-sans">

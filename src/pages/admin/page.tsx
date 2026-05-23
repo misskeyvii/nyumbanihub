@@ -181,6 +181,8 @@ export default function AdminPage() {
       ...(req.subcategory && { subcategory: req.subcategory }),
       subscription_expires_at: expiresStr,
       subscription_details: newDetails,
+      has_notification: true,
+      notification_message: `Your "${req.account_type}" listing account for "${req.business_name}" has been approved! Your ${req.account_type} subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`,
     };
 
     const hasPrimary = !!userData?.account_type && userData.account_type.trim() !== '';
@@ -209,12 +211,14 @@ export default function AdminPage() {
       await supabaseAdmin.from('app_config').update({ value: String(currentUsed + 1) }).eq('key', 'promo_slots_used');
     }
 
-    // Send in-app notification to user
+    // Send in-app notification — merge into same update to avoid overwriting
     await supabaseAdmin.from('users').update({ 
       has_notification: true,
       notification_message: `Your "${req.account_type}" listing account for "${req.business_name}" has been approved! Your ${req.account_type} subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`
     }).eq('id', req.user_id);
 
+    // Refresh users list so admin sees updated account types immediately
+    await fetchUsers();
     setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
     setApprovingId(null);
   };
