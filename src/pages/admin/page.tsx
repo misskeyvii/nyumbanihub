@@ -165,25 +165,28 @@ export default function AdminPage() {
 
   const handleApproveRequest = async (req: PendingRequest) => {
     setApprovingId(req.id);
-    // Fetch current user data
-    const { data: userData } = await supabaseAdmin.from('users').select('account_type, extra_account_types').eq('id', req.user_id).single();
+    const { data: userData } = await supabaseAdmin.from('users').select('account_type, extra_account_types, subscription_details').eq('id', req.user_id).single();
     
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
+    const expiresStr = expiresAt.toISOString();
+
+    // Per-account subscription details
+    const currentDetails = (userData?.subscription_details as Record<string, string>) || {};
+    const newDetails = { ...currentDetails, [req.account_type]: expiresStr };
 
     let updateData: any = {
       ...(req.phone && { phone: req.phone }),
       ...(req.county && { county: req.county }),
       ...(req.subcategory && { subcategory: req.subcategory }),
-      subscription_expires_at: expiresAt.toISOString(),
+      subscription_expires_at: expiresStr,
+      subscription_details: newDetails,
     };
 
     const hasPrimary = !!userData?.account_type && userData.account_type.trim() !== '';
     if (!hasPrimary) {
-      // First account type — set as primary
       updateData.account_type = req.account_type;
     } else if (userData.account_type !== req.account_type) {
-      // Already has primary — add to extra_account_types array (avoid duplicates)
       const existing = (userData.extra_account_types || []).filter(Boolean);
       if (!existing.includes(req.account_type)) {
         updateData.extra_account_types = [...existing, req.account_type];
@@ -209,7 +212,7 @@ export default function AdminPage() {
     // Send in-app notification to user
     await supabaseAdmin.from('users').update({ 
       has_notification: true,
-      notification_message: `Your "${req.account_type}" listing account for "${req.business_name}" has been approved! Your subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+      notification_message: `Your "${req.account_type}" listing account for "${req.business_name}" has been approved! Your ${req.account_type} subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`
     }).eq('id', req.user_id);
 
     setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
@@ -704,6 +707,32 @@ export default function AdminPage() {
                         className="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 outline-none focus:border-emerald-400 cursor-pointer"
                       />
                     </div>
+                    {/* Per-account expiry dates */}
+                    {[u.account_type, ...(u.extra_account_types || [])].filter(Boolean).length > 1 && (
+                      <div className="md:col-span-2">
+                        <label className="text-[10px] font-semibold text-gray-400 block mb-2">Per-Account Expiry Dates</label>
+                        <div className="space-y-2">
+                          {[u.account_type, ...(u.extra_account_types || [])].filter(Boolean).map(at => {
+                            const details = (u as any).subscription_details || {};
+                            const expiry = details[at] ? details[at].split('T')[0] : '';
+                            return (
+                              <div key={at} className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-600 capitalize w-24 flex-shrink-0">{at}</span>
+                                <input
+                                  type="date"
+                                  defaultValue={expiry}
+                                  onBlur={async e => {
+                                    const newDetails = { ...((u as any).subscription_details || {}), [at]: e.target.value };
+                                    await supabaseAdmin.from('users').update({ subscription_details: newDetails }).eq('id', u.id);
+                                  }}
+                                  className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-emerald-400 cursor-pointer"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Reset Password — separate section with confirm */}

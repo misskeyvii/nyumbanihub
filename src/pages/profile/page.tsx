@@ -55,6 +55,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(localStorage.getItem('userName') || 'User');
   const [displayPhone, setDisplayPhone] = useState(localStorage.getItem('userPhone') || '');
   const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState<string | null>(null);
+  const [subscriptionDetails, setSubscriptionDetails] = useState<Record<string, string>>({});
   const [notification, setNotification] = useState<string | null>(null);
   const userName = displayName;
   const userPhone = displayPhone;
@@ -69,7 +70,7 @@ export default function ProfilePage() {
       if (!session) { navigate('/signin'); return; }
       const promises: Promise<any>[] = [
         (async () => {
-          const { data } = await supabase.from('users').select('avatar_url, subscription_expires_at, has_notification, notification_message, account_type, extra_account_types').eq('id', session.user.id).single();
+          const { data } = await supabase.from('users').select('avatar_url, subscription_expires_at, subscription_details, has_notification, notification_message, account_type, extra_account_types').eq('id', session.user.id).single();
           return { data };
         })(),
       ];
@@ -98,6 +99,9 @@ export default function ProfilePage() {
       }
       if (userData?.subscription_expires_at) {
         setSubscriptionExpiresAt(userData.subscription_expires_at);
+      }
+      if (userData?.subscription_details) {
+        setSubscriptionDetails(userData.subscription_details as Record<string, string>);
       }
       if (userData?.has_notification && userData?.notification_message) {
         setNotification(userData.notification_message);
@@ -407,16 +411,25 @@ export default function ProfilePage() {
                     {accountType}
                   </span>
                 )}
-                {subscriptionExpiresAt && (
-                  <p className={`text-xs mt-1 font-medium ${
-                    new Date(subscriptionExpiresAt) < new Date() ? 'text-rose-500' :
-                    new Date(subscriptionExpiresAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) ? 'text-amber-500' :
-                    'text-gray-400'
-                  }`}>
-                    <i className="ri-calendar-line mr-1"></i>
-                    {new Date(subscriptionExpiresAt) < new Date() ? 'Expired on ' : 'Subscription expires '}
-                    {new Date(subscriptionExpiresAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
+                {/* Per-account subscription expiry */}
+                {approvedTypes.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {approvedTypes.map(type => {
+                      const expiry = subscriptionDetails[type] || subscriptionExpiresAt;
+                      if (!expiry) return null;
+                      const expired = new Date(expiry) < new Date();
+                      const expiringSoon = !expired && new Date(expiry) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                      return (
+                        <p key={type} className={`text-xs font-medium ${
+                          expired ? 'text-rose-500' : expiringSoon ? 'text-amber-500' : 'text-gray-400'
+                        }`}>
+                          <i className="ri-calendar-line mr-1"></i>
+                          <span className="capitalize font-semibold">{type}</span>: {expired ? 'Expired ' : 'Expires '}
+                          {new Date(expiry).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      );
+                    })}
+                  </div>
                 )}
                 <p className="text-xs text-gray-400 mt-1">Tap the camera icon to update your profile photo</p>
                 {subscriptionExpiresAt && (
