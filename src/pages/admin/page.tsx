@@ -19,8 +19,6 @@ type User = {
 
 const accountTypes = ['landlord', 'airbnb', 'hotel', 'shop', 'marketplace', 'service', 'entertainment'];
 const emptyForm = { name: '', email: '', password: '', phone: '', county: '', area: '', account_type: '' };
-const serviceTypes = ['Mama Fua', 'Movers', 'Caretaker', 'Plumbing', 'Electrician', 'Security', 'Landscaping', 'Painting', 'Gas Delivery', 'Water Dispenser'];
-const emptyProvider = { name: '', phone: '', whatsapp: '', county: '', area: '', service_type: '', description: '', price: '', price_unit: '/day' };
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -37,12 +35,6 @@ export default function AdminPage() {
   const [resetPasswords, setResetPasswords] = useState<{ [id: string]: string }>({});
   const [resetingId, setResetingId] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
-  const [adminTab, setAdminTab] = useState<'users' | 'services'>('users');
-  const [providers, setProviders] = useState<any[]>([]);
-  const [providerForm, setProviderForm] = useState(emptyProvider);
-  const [addingProvider, setAddingProvider] = useState(false);
-  const [showAddProvider, setShowAddProvider] = useState(false);
-  const [providerError, setProviderError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,7 +45,6 @@ export default function AdminPage() {
       if (me?.role !== 'admin') { navigate('/'); return; }
       setAuthChecking(false);
       fetchUsers();
-      fetchProviders();
     };
     check();
   }, []);

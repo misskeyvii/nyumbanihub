@@ -146,6 +146,21 @@ export default function HeroSection() {
                 </select>
               </div>
 
+              <div className="hidden sm:flex flex-shrink-0 items-center gap-1.5 border border-gray-200 rounded-lg px-2.5 py-2 md:py-2.5 bg-gray-50">
+                <span className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+                  <i className="ri-price-tag-3-line text-emerald-600 text-xs" />
+                </span>
+                <select
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="text-xs text-gray-700 bg-transparent outline-none cursor-pointer"
+                >
+                  {priceRanges.map((range) => (
+                    <option key={range} value={range}>{range}</option>
+                  ))}
+                </select>
+              </div>
+
               <button
                 onClick={handleSearch}
                 className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs md:text-sm px-4 md:px-6 py-2 md:py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer"

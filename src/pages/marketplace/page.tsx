@@ -6,8 +6,6 @@ import ListingCard from '../../components/base/ListingCard';
 import { kenyaCounties } from '../../mocks/listings';
 import { supabase } from '../../lib/supabase';
 
-const productCategories = ['All', 'Electronics', 'Fashion & Crafts', 'Fresh Produce', 'Food & Drinks', 'Furniture'];
-
 export default function MarketplacePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [county, setCounty] = useState('');
