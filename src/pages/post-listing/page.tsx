@@ -4,6 +4,7 @@ import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import { kenyaCounties } from '../../mocks/listings';
 import { supabase } from '../../lib/supabase';
+import { useUpload } from '../../lib/uploadContext';
 
 const accountTypeMap: Record<string, string[]> = {
   landlord: ['home', 'apartment'],
@@ -35,6 +36,7 @@ export default function PostListingPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const navigate = useNavigate();
+  const { startBackgroundUpload } = useUpload();
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -173,34 +175,13 @@ export default function PostListingPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setError('You must be signed in to post.'); setSubmitting(false); return; }
 
-    // Upload images
-    const imageUrls: string[] = [];
-    for (const file of images) {
-      const ext = file.name.split('.').pop();
-      const path = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage.from('listings').upload(path, file, { upsert: true });
-      if (uploadError) { setError('Upload failed: ' + uploadError.message); setSubmitting(false); return; }
-      const { data: urlData } = supabase.storage.from('listings').getPublicUrl(uploadData.path);
-      imageUrls.push(urlData.publicUrl);
-    }
-
-    // Save listing
-    const { error: insertError } = await supabase.from('listings').insert({
-      user_id: session.user.id,
+    startBackgroundUpload({
       title: form.title,
-      listing_type: selectedType,
-      county: form.county,
-      area: form.area,
-      price: form.price,
-      description: form.description,
-      phone: form.phone,
-      whatsapp: form.whatsapp,
-      images: imageUrls,
-      map_url: form.map_url || null,
-      status: 'live',
+      form,
+      images,
+      selectedType,
+      userId: session.user.id,
     });
-
-    if (insertError) { setError(insertError.message); setSubmitting(false); return; }
 
     setSubmitting(false);
     navigate('/');

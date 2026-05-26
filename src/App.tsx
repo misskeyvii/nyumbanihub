@@ -3,6 +3,7 @@ import { AppRoutes } from "./router";
 import { I18nextProvider } from "react-i18next";
 import i18n from "./i18n";
 import { useState, useEffect, createContext, useContext } from "react";
+import { UploadProvider } from "./lib/uploadContext";
 
 export const DarkModeContext = createContext({ dark: false, toggle: () => {} });
 export const useDarkMode = () => useContext(DarkModeContext);
@@ -62,10 +63,12 @@ function App() {
   return (
     <DarkModeContext.Provider value={{ dark, toggle: () => setDark(d => !d) }}>
       <I18nextProvider i18n={i18n}>
-        <BrowserRouter>
-          <BackButtonHandler />
-          <AppRoutes />
-        </BrowserRouter>
+        <UploadProvider>
+          <BrowserRouter>
+            <BackButtonHandler />
+            <AppRoutes />
+          </BrowserRouter>
+        </UploadProvider>
       </I18nextProvider>
     </DarkModeContext.Provider>
   );
