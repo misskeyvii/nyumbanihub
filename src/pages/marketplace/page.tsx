@@ -1,4 +1,3 @@
-import SEO from '../../components/base/SEO';
 import { useState, useEffect } from 'react';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
@@ -6,6 +5,8 @@ import Footer from '../../components/feature/Footer';
 import ListingCard from '../../components/base/ListingCard';
 import { kenyaCounties } from '../../mocks/listings';
 import { supabase } from '../../lib/supabase';
+
+const productCategories = ['All', 'Electronics', 'Fashion & Crafts', 'Fresh Produce', 'Food & Drinks', 'Furniture'];
 
 export default function MarketplacePage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -31,18 +32,13 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <SEO
-        title="Marketplace — Buy from Verified Shops in Kenya"
-        description="Shop from 100% verified physical shops across Kenya on Nyumbani Hub Marketplace. Electronics, fashion, food, furniture and more — every seller is traceable."
-        path="/marketplace"
-      />
       <Navbar />
       <main className="pt-16">
         {/* Hero Banner */}
         <div className="relative bg-gray-900 overflow-hidden">
           <img
             src="https://readdy.ai/api/search-image?query=Kenya%20marketplace%20modern%20shop%20interior%20products%20display%20verified%20business%20clean%20organized%20retail%20shelves%20bright%20colorful&width=1400&height=400&seq=600&orientation=landscape"
-            alt="Nyumbani Hub Marketplace"
+            alt="Mabidha Marketplace"
             className="w-full h-48 md:h-64 object-cover object-top opacity-40"
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
@@ -50,7 +46,7 @@ export default function MarketplacePage() {
               <span className="w-3 h-3 flex items-center justify-center"><i className="ri-store-2-fill text-xs"></i></span>
               Verified Shops Only
             </span>
-            <h1 className="text-white font-bold text-2xl md:text-4xl">Nyumbani Hub Marketplace</h1>
+            <h1 className="text-white font-bold text-2xl md:text-4xl">Mabidha Marketplace</h1>
             <p className="text-white/70 text-sm mt-2 max-w-lg">Every product is from a verified, traceable physical shop in Kenya. You can visit the seller in real life.</p>
           </div>
         </div>

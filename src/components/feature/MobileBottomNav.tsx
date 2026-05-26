@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 const navItems = [
@@ -11,65 +11,27 @@ const navItems = [
 
 export default function MobileBottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [unread, setUnread] = useState(false);
-  const [isServiceOnly, setIsServiceOnly] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setIsLoggedIn(!!data.session);
-      if (data.session) checkUnread(data.session.user.id);
-      const at = localStorage.getItem('accountType') || '';
-      setIsServiceOnly(['service', 'entertainment'].includes(at));
-    });
+    supabase.auth.getSession().then(({ data }) => setIsLoggedIn(!!data.session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setIsLoggedIn(!!session);
-      if (session) checkUnread(session.user.id);
-      const at = localStorage.getItem('accountType') || '';
-      setIsServiceOnly(['service', 'entertainment'].includes(at));
     });
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkUnread = async (uid: string) => {
-    const { data } = await supabase
-      .from('messages')
-      .select('id')
-      .eq('to_user_id', uid)
-      .eq('read', false)
-      .limit(1);
-    setUnread(!!(data && data.length > 0));
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    localStorage.clear();
+    navigate('/');
   };
-
-  // Realtime: listen for new incoming messages
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) return;
-      const uid = data.session.user.id;
-      channel = supabase
-        .channel(`unread-badge-${uid}`)
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `to_user_id=eq.${uid}`,
-        }, () => setUnread(true))
-        .subscribe();
-    });
-    return () => { if (channel) supabase.removeChannel(channel); };
-  }, [isLoggedIn]);
-
-  // Clear badge when user opens chat
-  useEffect(() => {
-    if (location.pathname === '/chat') setUnread(false);
-  }, [location.pathname]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 md:hidden">
       <div className="flex items-stretch">
-        {navItems.filter(item => !(item.locked && isServiceOnly)).map((item) => {
+        {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const isPost = item.locked;
           return (
@@ -96,18 +58,6 @@ export default function MobileBottomNav() {
         {/* Auth button */}
         {isLoggedIn ? (
           <>
-            <Link
-              to="/chat"
-              className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors cursor-pointer ${
-                location.pathname === '/chat' ? 'text-emerald-600' : 'text-gray-400'
-              }`}
-            >
-              <div className="relative w-6 h-6 flex items-center justify-center">
-                <i className={`${location.pathname === '/chat' ? 'ri-chat-3-fill' : 'ri-chat-3-line'} text-xl`}></i>
-                {unread && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>}
-              </div>
-              <span className="text-[10px] font-medium">Messages</span>
-            </Link>
             <Link
               to="/profile"
               className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors cursor-pointer ${

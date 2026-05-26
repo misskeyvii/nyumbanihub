@@ -1,11 +1,9 @@
-import SEO from '../../components/base/SEO';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import Footer from '../../components/feature/Footer';
 import ListingCard from '../../components/base/ListingCard';
-import ListingCardSkeleton from '../../components/base/ListingCardSkeleton';
 import { kenyaCounties } from '../../mocks/listings';
 import { supabase } from '../../lib/supabase';
 
@@ -26,9 +24,6 @@ const urlToCategoryMap: Record<string, string> = {
 export default function ExplorePage() {
   const [searchParams] = useSearchParams();
   const [allListings, setAllListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(12);
-  const [showBackToTop, setShowBackToTop] = useState(false);
   const [category, setCategory] = useState(() => {
     const raw = searchParams.get('category')?.toLowerCase() ?? '';
     return urlToCategoryMap[raw] ?? 'All';
@@ -37,31 +32,12 @@ export default function ExplorePage() {
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [price, setPrice] = useState('Any Price');
   const [sort, setSort] = useState('Latest');
+  const [showFilter, setShowFilter] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   useEffect(() => {
     supabase.from('listings').select('*').eq('status', 'live').order('created_at', { ascending: false })
-      .then(({ data }) => { setAllListings(data || []); setLoading(false); });
-
-    const channel = supabase
-      .channel('listings-changes')
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'listings' }, payload => {
-        setAllListings(prev => prev.filter(l => l.id !== payload.old.id));
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'listings' }, payload => {
-        if (payload.new.status !== 'live') {
-          setAllListings(prev => prev.filter(l => l.id !== payload.new.id));
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  useEffect(() => {
-    const handleScroll = () => setShowBackToTop(window.scrollY > 400);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+      .then(({ data }) => setAllListings(data || []));
   }, []);
 
   useEffect(() => {
@@ -86,54 +62,33 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <SEO
-        title="Explore Verified Listings in Kenya"
-        description="Browse verified homes, apartments, Airbnbs, hotels, shops and services across all 47 counties in Kenya. Filter by location, price and category on Nyumbani Hub."
-        path="/explore"
-      />
       <Navbar />
-
-      {/* Fixed header with category tabs */}
-      <div className="fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 md:px-6 py-3">
-        <div className="max-w-7xl mx-auto space-y-2">
-          {/* Category tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
-            {categoryOptions.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`text-sm font-medium px-4 py-1.5 rounded-full whitespace-nowrap transition-colors cursor-pointer flex-shrink-0 ${
-                  category === cat ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-          {/* Search + filters row — visible on mobile */}
-          <div className="flex gap-2 lg:hidden">
-            <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-              <i className="ri-search-line text-gray-400 text-sm flex-shrink-0"></i>
-              <input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search listings..."
-                className="text-sm outline-none bg-transparent flex-1 text-gray-700 min-w-0"
-              />
-              {query && <button onClick={() => setQuery('')} className="text-gray-400 cursor-pointer flex-shrink-0"><i className="ri-close-line text-sm"></i></button>}
+      <main className="pt-16">
+        {/* Page Header */}
+        <div className="bg-white border-b border-gray-100 px-4 md:px-6 py-6">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              {category === 'All' ? 'Explore Listings' : `${category} in Kenya`}
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              Browse verified properties, stays, and services across Kenya
+            </p>
+            {/* Category Tabs */}
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
+              {categoryOptions.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  className={`text-sm font-medium px-4 py-2 rounded-full whitespace-nowrap transition-colors cursor-pointer flex-shrink-0 ${
+                    category === cat ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
-            <select value={county} onChange={e => setCounty(e.target.value)} className="text-xs border border-gray-200 bg-gray-50 text-gray-700 rounded-xl px-2 py-2 focus:outline-none cursor-pointer flex-shrink-0">
-              <option value="">County</option>
-              {kenyaCounties.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select value={price} onChange={e => setPrice(e.target.value)} className="text-xs border border-gray-200 bg-gray-50 text-gray-700 rounded-xl px-2 py-2 focus:outline-none cursor-pointer flex-shrink-0">
-              {priceOptions.map(p => <option key={p} value={p}>{p === 'Any Price' ? 'Price' : p}</option>)}
-            </select>
           </div>
         </div>
-      </div>
-
-      <main className="pt-36 md:pt-28">
 
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
           <div className="flex gap-6">
@@ -189,7 +144,7 @@ export default function ExplorePage() {
                     </div>
                     <span className="text-sm text-gray-700 font-medium">Verified Only</span>
                   </label>
-                  <p className="text-xs text-gray-400 mt-1 ml-13">Show only Nyumbani Hub-verified listings</p>
+                  <p className="text-xs text-gray-400 mt-1 ml-13">Show only Mabidha-verified listings</p>
                 </div>
 
                 <button
@@ -203,49 +158,97 @@ export default function ExplorePage() {
 
             {/* Main Content */}
             <div className="flex-1 min-w-0">
-              {/* Sort Bar */}
+              {/* Sort + Filter Bar */}
               <div className="flex items-center justify-between mb-5 gap-3">
-                <p className="text-sm text-gray-500">
-                  <strong className="text-gray-900">{filtered.length}</strong> found
-                  {county && <span> in <strong>{county}</strong></span>}
-                </p>
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 flex-1 max-w-sm">
+                    <i className="ri-search-line text-gray-400 text-sm"></i>
+                    <input
+                      value={query}
+                      onChange={e => setQuery(e.target.value)}
+                      placeholder="Search listings..."
+                      className="text-sm outline-none bg-transparent flex-1 text-gray-700"
+                    />
+                    {query && <button onClick={() => setQuery('')} className="text-gray-400 cursor-pointer"><i className="ri-close-line text-sm"></i></button>}
+                  </div>
+                  <p className="text-sm text-gray-500 whitespace-nowrap">
+                    <strong className="text-gray-900">{filtered.length}</strong> found
+                    {county && <span> in <strong>{county}</strong></span>}
+                  </p>
+                </div>
                 <div className="flex items-center gap-2">
-                  <select value={sort} onChange={(e) => setSort(e.target.value)} className="text-sm border border-gray-200 bg-white text-gray-700 px-3 py-2 rounded-xl focus:outline-none focus:border-emerald-400 cursor-pointer">
+                  {/* Mobile filter toggle */}
+                  <button
+                    onClick={() => setShowFilter(!showFilter)}
+                    className="lg:hidden flex items-center gap-1.5 text-sm border border-gray-200 bg-white text-gray-700 px-3 py-2 rounded-xl hover:border-emerald-400 transition-colors cursor-pointer whitespace-nowrap"
+                  >
+                    <span className="w-4 h-4 flex items-center justify-center">
+                      <i className="ri-equalizer-3-line text-emerald-600"></i>
+                    </span>
+                    Filters
+                  </button>
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value)}
+                    className="text-sm border border-gray-200 bg-white text-gray-700 px-3 py-2 rounded-xl focus:outline-none focus:border-emerald-400 cursor-pointer"
+                  >
                     {sortOptions.map((s) => <option key={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
 
-              {/* Listings Grid */}
-              {loading ? (
-                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                  {Array.from({ length: 6 }).map((_, i) => <ListingCardSkeleton key={i} />)}
-                </div>
-              ) : filtered.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                    {filtered.slice(0, visibleCount).map((listing) => (
-                      <ListingCard key={listing.id} listing={listing} />
-                    ))}
+              {/* Mobile Filter Drawer */}
+              {showFilter && (
+                <div className="lg:hidden bg-white rounded-2xl border border-gray-100 p-4 mb-5 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1.5">County</label>
+                    <select
+                      value={county}
+                      onChange={(e) => setCounty(e.target.value)}
+                      className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none cursor-pointer"
+                    >
+                      <option value="">All Counties</option>
+                      {kenyaCounties.map((c) => <option key={c}>{c}</option>)}
+                    </select>
                   </div>
-                  {visibleCount < filtered.length && (
-                    <div className="text-center mt-8">
-                      <button
-                        onClick={() => setVisibleCount(v => v + 12)}
-                        className="bg-white border border-emerald-200 text-emerald-600 font-semibold text-sm px-8 py-3 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer"
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1.5">Price</label>
+                    <select
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none cursor-pointer"
+                    >
+                      {priceOptions.map((p) => <option key={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <div
+                        onClick={() => setVerifiedOnly(!verifiedOnly)}
+                        className={`w-9 h-5 rounded-full transition-colors relative ${verifiedOnly ? 'bg-emerald-600' : 'bg-gray-200'}`}
                       >
-                        Load More ({filtered.length - visibleCount} remaining)
-                      </button>
-                    </div>
-                  )}
-                </>
+                        <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${verifiedOnly ? 'left-4' : 'left-0.5'}`}></div>
+                      </div>
+                      <span className="text-sm text-gray-700">Verified Only</span>
+                    </label>
+                    <button onClick={() => { setCategory('All'); setCounty(''); setPrice('Any Price'); setVerifiedOnly(false); setShowFilter(false); }} className="text-xs text-rose-400 cursor-pointer whitespace-nowrap">Clear All</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Listings Grid */}
+              {filtered.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                  {filtered.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-20">
                   <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded-full mx-auto mb-4">
                     <i className="ri-search-line text-gray-400 text-2xl"></i>
                   </div>
                   <p className="text-gray-500 font-medium">No listings match your filters</p>
-                  <p className="text-gray-400 text-sm mt-1">Try adjusting your search or clearing filters</p>
                   <button onClick={() => { setCategory('All'); setCounty(''); setPrice('Any Price'); }} className="mt-3 text-sm text-emerald-600 hover:underline cursor-pointer whitespace-nowrap">Clear Filters</button>
                 </div>
               )}
@@ -256,14 +259,6 @@ export default function ExplorePage() {
       <Footer />
       <div className="h-16 md:hidden"></div>
       <MobileBottomNav />
-      {showBackToTop && (
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-24 md:bottom-8 right-4 w-11 h-11 flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg transition-all cursor-pointer z-40"
-        >
-          <i className="ri-arrow-up-line text-lg"></i>
-        </button>
-      )}
     </div>
   );
 }

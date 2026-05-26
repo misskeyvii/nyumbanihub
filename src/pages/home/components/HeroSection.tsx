@@ -1,44 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { kenyaCounties } from '../../../mocks/listings';
-import { supabase } from '../../../lib/supabase';
 
 const categories = ['All', 'Homes', 'Apartments', 'Airbnb', 'Hotels', 'Shops', 'Services', 'Marketplace'];
+const priceRanges = ['Any Price', 'Under KSh 5K', 'KSh 5K–20K', 'KSh 20K–60K', 'KSh 60K+'];
 
 export default function HeroSection() {
   const [county, setCounty] = useState('');
   const [category, setCategory] = useState('All');
+  const [price, setPrice] = useState('Any Price');
   const [query, setQuery] = useState('');
-  const [stats, setStats] = useState({ listings: 0, users: 0 });
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [slotsLeft, setSlotsLeft] = useState<number | null>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setIsLoggedIn(!!data.session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setIsLoggedIn(!!session));
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    Promise.all([
-      supabase.from('listings').select('id', { count: 'exact', head: true }).eq('status', 'live'),
-      supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('role', 'user'),
-      supabase.from('app_config').select('key, value').in('key', ['promo_slots_total', 'promo_slots_used']),
-    ]).then(([{ count: listings }, { count: users }, { data: config }]) => {
-      setStats({ listings: listings || 0, users: users || 0 });
-      if (config) {
-        const total = parseInt(config.find(c => c.key === 'promo_slots_total')?.value || '200');
-        const used = parseInt(config.find(c => c.key === 'promo_slots_used')?.value || '0');
-        setSlotsLeft(Math.max(0, total - used));
-      }
-    });
-  }, []);
 
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (category && category !== 'All') params.set('category', category.toLowerCase());
     if (county) params.set('county', county);
+    if (price && price !== 'Any Price') params.set('price', price);
     if (query.trim()) params.set('q', query.trim());
     navigate(`/explore${params.toString() ? `?${params.toString()}` : ''}`);
   };
@@ -49,20 +27,17 @@ export default function HeroSection() {
       {/* ── Background image ── */}
       <div className="absolute inset-0 w-full h-full">
         <img
-          src="https://i.postimg.cc/Gt0TBpYL/nai.jpg"
+          src="https://readdy.ai/api/search-image?query=aerial%20panoramic%20view%20Nairobi%20Kenya%20skyline%20cityscape%20modern%20buildings%20green%20trees%20blue%20sky%20morning%20golden%20hour%20vibrant%20Africa%20urban%20landscape%20beautiful&width=1920&height=1080&seq=300&orientation=landscape"
           alt="Nairobi Kenya"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-top"
         />
-        {/* Multi-layer gradient for depth and richness */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-emerald-950/40 to-black/75" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-        {/* Emerald glow at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-emerald-900/40 to-transparent" />
-        {/* Subtle vignette */}
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%)' }} />
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/50 to-black/72" />
+        {/* Emerald colour tint bottom-edge */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-emerald-950/30 to-transparent" />
       </div>
 
-      {/* ── Floating decorative o rbs ── */} 
+      {/* ── Floating decorative orbs ── */}
       <div className="absolute top-8 right-6 w-28 h-28 md:w-64 md:h-64 rounded-full bg-emerald-500/20 blur-2xl md:blur-3xl orb-float pointer-events-none" />
       <div className="absolute top-1/2 -left-8 w-24 h-24 md:w-56 md:h-56 rounded-full bg-teal-400/15 blur-2xl md:blur-3xl orb-float-slow pointer-events-none" />
       <div className="absolute bottom-6 right-1/3 w-20 h-20 md:w-44 md:h-44 rounded-full bg-emerald-300/15 blur-xl md:blur-2xl orb-float-mid pointer-events-none" />
@@ -70,41 +45,6 @@ export default function HeroSection() {
       {/* ── Content ── */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 w-full pt-16 pb-5 md:pt-28 md:pb-20">
         <div className="max-w-3xl mx-auto text-center">
-
-          {/* Promo Offer Banner */}
-          {slotsLeft !== null && slotsLeft > 0 && (
-            <div className="fade-slide-up mb-3 md:mb-5 inline-flex flex-col items-center gap-1">
-              <div className="inline-flex items-center gap-2 bg-amber-400/20 backdrop-blur-sm border border-amber-400/40 rounded-full px-4 py-1.5 animate-pulse">
-                <i className="ri-gift-fill text-amber-400 text-sm"></i>
-                <span className="text-amber-300 text-xs md:text-sm font-bold tracking-wide">🎉 Launch Offer — First 200 Businesses FREE!</span>
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1">
-                  <i className="ri-ticket-fill text-emerald-400 text-xs"></i>
-                  <span className="text-white font-bold text-xs md:text-sm">{slotsLeft}</span>
-                  <span className="text-white/70 text-xs">slots left out of 200</span>
-                </div>
-                {/* Progress bar */}
-                <div className="hidden md:flex items-center gap-1.5">
-                  <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-emerald-400 to-amber-400 rounded-full transition-all duration-500"
-                      style={{ width: `${((200 - slotsLeft) / 200) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-white/60 text-xs">{200 - slotsLeft} claimed</span>
-                </div>
-              </div>
-            </div>
-          )}
-          {slotsLeft === 0 && (
-            <div className="fade-slide-up mb-3 md:mb-5">
-              <div className="inline-flex items-center gap-2 bg-rose-500/20 backdrop-blur-sm border border-rose-400/40 rounded-full px-4 py-1.5">
-                <i className="ri-close-circle-fill text-rose-400 text-sm"></i>
-                <span className="text-rose-300 text-xs md:text-sm font-bold">All 200 free slots have been claimed!</span>
-              </div>
-            </div>
-          )}
 
           {/* Verified pill */}
           <div className="fade-slide-up inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-emerald-400/30 rounded-full px-3 py-1 mb-2.5 md:mb-6 md:px-4 md:py-1.5">
@@ -134,14 +74,14 @@ export default function HeroSection() {
           {/* Tagline — short on mobile */}
           <p className="fade-slide-up-2 text-white/65 text-[11px] md:text-lg mt-2 mb-3 md:mt-4 md:mb-8 max-w-[240px] md:max-w-xl mx-auto leading-snug md:leading-relaxed">
             <span className="md:hidden">Trusted landlords, shops &amp; services — physically verified.</span>
-            <span className="hidden md:inline">Nyumbani Hub connects you to trusted landlords, businesses, and service providers — all physically verified, zero scams.</span>
+            <span className="hidden md:inline">Mabidha connects you to trusted landlords, businesses, and service providers — all physically verified, zero scams.</span>
           </p>
 
           {/* Desktop stats */}
           <div className="hidden md:flex flex-wrap items-center justify-center gap-3 mb-8 fade-slide-up-2">
             {[
-              { icon: 'ri-list-check-3', val: `${stats.listings.toLocaleString()}+`, label: 'Verified Listings' },
-              { icon: 'ri-user-check-fill', val: `${stats.users.toLocaleString()}+`, label: 'Verified Users' },
+              { icon: 'ri-home-4-fill', val: '1,240+', label: 'Verified Homes' },
+              { icon: 'ri-store-2-fill', val: '892+', label: 'Verified Shops' },
               { icon: 'ri-shield-check-fill', val: '100%', label: 'Scam-Free' },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/15 rounded-full px-3 py-1.5">
@@ -216,43 +156,16 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Mobile search — full width prominent */}
-          <div className="flex md:hidden mt-3 fade-slide-up-3 w-full max-w-sm mx-auto">
-            <div className="flex w-full gap-2">
-              <div className="flex-1 flex items-center gap-2 bg-white rounded-xl px-3 py-2.5 shadow-lg">
-                <i className="ri-search-line text-emerald-600 text-sm flex-shrink-0" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  type="text"
-                  placeholder="Search homes, services..."
-                  className="flex-1 text-sm text-gray-700 bg-transparent outline-none min-w-0"
-                />
-              </div>
-              <button
-                onClick={handleSearch}
-                className="bg-emerald-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl flex-shrink-0 cursor-pointer"
-              >
-                <i className="ri-search-line" />
-              </button>
-            </div>
-          </div>
-
           {/* Mobile sign-in nudge */}
           <div className="flex md:hidden items-center justify-center gap-3 mt-3 fade-slide-up-3">
-            {!isLoggedIn && (
-              <>
-                <a
-                  href="/signin"
-                  onClick={(e) => { e.preventDefault(); navigate('/signin'); }}
-                  className="text-white/80 text-xs font-medium underline underline-offset-2 cursor-pointer hover:text-white transition-colors"
-                >
-                  Sign In
-                </a>
-                <span className="text-white/30 text-xs">·</span>
-              </>
-            )}
+            <a
+              href="/signin"
+              onClick={(e) => { e.preventDefault(); navigate('/signin'); }}
+              className="text-white/80 text-xs font-medium underline underline-offset-2 cursor-pointer hover:text-white transition-colors"
+            >
+              Sign In
+            </a>
+            <span className="text-white/30 text-xs">·</span>
             <a
               href="/post-listing"
               onClick={(e) => { e.preventDefault(); navigate('/post-listing'); }}

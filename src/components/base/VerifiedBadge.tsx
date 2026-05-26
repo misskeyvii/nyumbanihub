@@ -12,7 +12,7 @@ export default function VerifiedBadge({ type = 'verified', size = 'sm' }: Verifi
     },
     inspected: {
       icon: 'ri-eye-line',
-      label: 'Inspected by Nyumbani Hub',
+      label: 'Inspected by Mabidha',
       classes: 'bg-emerald-700 text-white',
     },
     shop: {

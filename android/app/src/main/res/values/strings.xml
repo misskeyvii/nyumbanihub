@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NyumbaniHub</string>
+    <string name="title_activity_main">NyumbaniHub</string>
+    <string name="package_name">com.nyumbanihub.app</string>
+    <string name="custom_url_scheme">com.nyumbanihub.app</string>
+</resources>
