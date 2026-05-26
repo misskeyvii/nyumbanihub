@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
@@ -27,19 +27,126 @@ const listingTypes = [
 ];
 
 export default function PostListingPage() {
-  const accountType = localStorage.getItem('accountType') ?? '';
-  const allowedTypes = accountTypeMap[accountType] ?? null;
-  const userPhone = localStorage.getItem('userPhone') ?? '';
-  const userCounty = localStorage.getItem('userCounty') ?? '';
+  const [accountType, setAccountType] = useState(localStorage.getItem('accountType') ?? '');
+  const [extraAccountTypes, setExtraAccountTypes] = useState<string[]>([]);
+  const [userRole, setUserRole] = useState(localStorage.getItem('userRole') ?? '');
+  const [userPhone, setUserPhone] = useState(localStorage.getItem('userPhone') ?? '');
+  const [userCounty, setUserCounty] = useState(localStorage.getItem('userCounty') ?? '');
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { setAuthChecked(true); return; }
+      const { data } = await supabase
+        .from('users')
+        .select('account_type, extra_account_types, role, phone, county, name, subscription_expires_at')
+        .eq('id', session.user.id)
+        .single();
+      if (data) {
+        const at = data.account_type ?? '';
+        const extraTypes = data.extra_account_types || [];
+        const role = data.role ?? '';
+        setAccountType(at);
+        setExtraAccountTypes(extraTypes);
+        setUserRole(role);
+        setUserPhone(data.phone ?? '');
+        setUserCounty(data.county ?? '');
+        localStorage.setItem('accountType', at);
+        localStorage.setItem('userRole', role);
+        localStorage.setItem('userPhone', data.phone ?? '');
+        localStorage.setItem('userCounty', data.county ?? '');
+        localStorage.setItem('userName', data.name ?? '');
+        if (data.subscription_expires_at && new Date(data.subscription_expires_at) < new Date()) {
+          setIsExpired(true);
+        }
+      }
+      setAuthChecked(true);
+    });
+  }, []);
+
+  // Combine all allowed listing types — computed from state (always fresh from DB)
+  const allAccountTypes = [accountType, ...extraAccountTypes].filter(Boolean);
+  const allowedTypes = !authChecked
+    ? null // still loading — don't restrict yet
+    : allAccountTypes.length > 0
+      ? allAccountTypes.flatMap(at => accountTypeMap[at] ?? [])
+      : null;
 
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedType, setSelectedType] = useState('');
-  const [form, setForm] = useState({ title: '', county: userCounty, area: '', price: '', description: '', phone: userPhone, whatsapp: userPhone, map_url: '' });
+  const [form, setForm] = useState({ title: '', county: '', area: '', price: '', description: '', phone: '', whatsapp: '', map_url: '' });
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+
+  // Update form defaults when user data loads
+  useEffect(() => {
+    setForm(f => ({ ...f, county: userCounty, phone: userPhone, whatsapp: userPhone }));
+  }, [userCounty, userPhone]);
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (isExpired) {
+    return (
+      <div className="min-h-screen bg-gray-50 font-sans">
+        <Navbar />
+        <main className="pt-16 px-4 pb-16 flex items-center justify-center min-h-screen">
+          <div className="text-center max-w-sm">
+            <div className="w-16 h-16 flex items-center justify-center bg-amber-100 rounded-full mx-auto mb-4">
+              <i className="ri-time-line text-amber-500 text-2xl"></i>
+            </div>
+            <p className="font-bold text-gray-900">Subscription Expired</p>
+            <p className="text-gray-400 text-sm mt-1">Your subscription has expired. Please renew to continue posting listings.</p>
+            <Link to="/profile" className="mt-4 inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap">
+              Go to Profile
+            </Link>
+          </div>
+        </main>
+        <MobileBottomNav />
+      </div>
+    );
+  }
+
+  // Only block if ALL account types are service/entertainment AND DB data is confirmed
+  const isServiceOnlyUser = authChecked && allAccountTypes.length > 0 && allAccountTypes.every(t => ['service', 'entertainment'].includes(t));
+
+  if (isServiceOnlyUser || userRole === 'marketer') {
+    const isMarketer = userRole === 'marketer';
+    return (
+      <div className="min-h-screen bg-gray-50 font-sans">
+        <Navbar />
+        <main className="pt-16 px-4 pb-16 flex items-center justify-center min-h-screen">
+          <div className="text-center max-w-sm">
+            <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded-full mx-auto mb-4">
+              <i className="ri-forbid-line text-gray-400 text-2xl"></i>
+            </div>
+            <p className="font-bold text-gray-900">{isMarketer ? 'Not available for marketers' : 'Listings not available'}</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {isMarketer
+                ? 'Your role is to market and add users. Head to your portal.'
+                : 'Service and entertainment providers post work photos from their profile.'}
+            </p>
+            <Link
+              to={isMarketer ? '/marketer' : '/profile'}
+              className="mt-4 inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+            >
+              {isMarketer ? 'Go to My Portal' : 'Go to Profile'}
+            </Link>
+          </div>
+        </main>
+        <MobileBottomNav />
+      </div>
+    );
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

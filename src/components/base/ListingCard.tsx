@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 
 interface ListingCardProps {
   listing: any;
@@ -21,10 +23,48 @@ const typeColor: Record<string, string> = {
 };
 
 export default function ListingCard({ listing, promoted = false }: ListingCardProps) {
+  const [favId, setFavId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
   const image = listing.images?.[0] || listing.image || 'https://placehold.co/600x400?text=No+Image';
   const type = listing.listing_type || listing.category || '';
   const location = listing.area ? `${listing.area}, ${listing.county}` : listing.location || listing.county || '';
   const price = listing.price?.toString().includes('KSh') ? listing.price : `KSh ${listing.price}`;
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) return;
+      const uid = data.session.user.id;
+      setUserId(uid);
+      supabase.from('favorites').select('id').eq('user_id', uid).eq('listing_id', listing.id).maybeSingle()
+        .then(({ data: fav }) => { if (fav) setFavId(fav.id); });
+    });
+  }, [listing.id]);
+
+  const toggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!userId) return;
+    if (favId) {
+      await supabase.from('favorites').delete().eq('id', favId);
+      setFavId(null);
+    } else {
+      const { data } = await supabase.from('favorites').insert({ user_id: userId, listing_id: listing.id }).select().single();
+      if (data) setFavId(data.id);
+    }
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/listing/${listing.id}`;
+    if (navigator.share) {
+      navigator.share({ title: listing.title, text: `Check out this listing on Nyumbani Hub`, url });
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Link copied to clipboard!');
+    }
+  };
 
   return (
     <Link to={`/listing/${listing.id}`} className="block group">
@@ -38,10 +78,26 @@ export default function ListingCard({ listing, promoted = false }: ListingCardPr
               </span>
             </div>
           )}
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 flex items-center gap-1.5">
             <span className={`text-[10px] font-semibold py-0.5 px-2 rounded-full ${typeColor[type] || 'bg-gray-100 text-gray-600'}`}>
               {typeLabel[type] || type}
             </span>
+            <button
+              onClick={handleShare}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-white/80 text-gray-400 hover:text-emerald-600 transition-colors cursor-pointer"
+            >
+              <i className="ri-share-line text-sm"></i>
+            </button>
+            {userId && (
+              <button
+                onClick={toggleFavorite}
+                className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors cursor-pointer ${
+                  favId ? 'bg-rose-500 text-white' : 'bg-white/80 text-gray-400 hover:text-rose-500'
+                }`}
+              >
+                <i className={`${favId ? 'ri-heart-fill' : 'ri-heart-line'} text-sm`}></i>
+              </button>
+            )}
           </div>
         </div>
         <div className="p-3">

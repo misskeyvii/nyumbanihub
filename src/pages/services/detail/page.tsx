@@ -1,14 +1,47 @@
 import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Navbar from '../../../components/feature/Navbar';
 import MobileBottomNav from '../../../components/feature/MobileBottomNav';
 import Footer from '../../../components/feature/Footer';
 import VerifiedBadge from '../../../components/base/VerifiedBadge';
-import { getProvidersByType, serviceTypeInfo } from '../../../mocks/services';
+import { serviceTypeInfo } from '../../../mocks/services';
+import { supabase } from '../../../lib/supabase';
+
+// Maps URL slug -> subcategory value stored in DB
+const slugToSubcategory: Record<string, string> = {
+  'mama-fua': 'Mama Fua',
+  'movers': 'Movers',
+  'caretaker': 'Caretakers',
+  'plumbing': 'Plumbing',
+  'electrician': 'Electricians',
+  'security': 'Security',
+  'landscaping': 'Landscaping',
+  'painting': 'Painting',
+  'gas-delivery': 'Gas Delivery',
+  'water-dispenser': 'Dispenser Water',
+};
 
 export default function ServiceDetailPage() {
   const { type } = useParams<{ type: string }>();
   const info = serviceTypeInfo[type || ''];
-  const providers = getProvidersByType(type as Parameters<typeof getProvidersByType>[0]);
+  const [providers, setProviders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const subcategory = slugToSubcategory[type || ''];
+    if (!subcategory) { setLoading(false); return; }
+    const fetch = async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('id, name, phone, county, subcategory, avatar_url, is_active')
+        .eq('subcategory', subcategory)
+        .eq('is_active', true)
+        .gt('subscription_expires_at', new Date().toISOString());
+      setProviders(data || []);
+      setLoading(false);
+    };
+    fetch();
+  }, [type]);
 
   if (!info) {
     return (
@@ -62,76 +95,40 @@ export default function ServiceDetailPage() {
           </div>
 
           {/* Providers Grid */}
-          {providers.length > 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <div className="w-10 h-10 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : providers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-              {providers.map((provider) => (
-                <div key={provider.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-emerald-200 transition-all group">
+              {providers.map((p) => (
+                <div key={p.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-emerald-200 transition-all group">
                   <div className="relative">
-                    <div className="w-full h-48 overflow-hidden bg-gray-100">
-                      <img
-                        src={provider.image}
-                        alt={provider.title}
-                        className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                      />
+                    <div className="w-full h-48 overflow-hidden bg-gray-100 flex items-center justify-center">
+                      {p.avatar_url ? (
+                        <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <span className="text-5xl font-bold text-gray-300">{p.name?.[0]?.toUpperCase()}</span>
+                      )}
                     </div>
-                    {provider.verified && (
-                      <div className="absolute top-3 left-3">
-                        <VerifiedBadge type="inspected" size="sm" />
-                      </div>
-                    )}
-                    {provider.available && (
-                      <div className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                        Available
-                      </div>
-                    )}
+                    <div className="absolute top-3 left-3">
+                      <VerifiedBadge type="inspected" size="sm" />
+                    </div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1">{provider.title}</h3>
-                    <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
-                      <span className="w-3 h-3 flex items-center justify-center"><i className="ri-map-pin-2-line text-emerald-500"></i></span>
-                      {provider.location}
-                    </p>
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-3">{provider.description}</p>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {provider.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{tag}</span>
-                      ))}
-                    </div>
-
-                    {/* Rating & Price */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-1">
-                        <span className="w-3 h-3 flex items-center justify-center"><i className="ri-star-fill text-amber-400 text-xs"></i></span>
-                        <span className="text-xs font-bold text-gray-800">{provider.rating}</span>
-                        <span className="text-xs text-gray-400">({provider.reviews})</span>
-                        <span className="text-xs text-gray-400 ml-1">• {provider.yearsExperience} yrs exp</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-bold text-gray-900">{provider.price}</span>
-                        <span className="text-xs text-gray-400">{provider.priceUnit}</span>
-                      </div>
-                    </div>
-
-                    {/* Contact Buttons */}
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1">{p.name}</h3>
+                    {p.county && (
+                      <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                        <i className="ri-map-pin-2-line text-emerald-500"></i>
+                        {p.county}
+                      </p>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
-                      <a
-                        href={`tel:${provider.phone}`}
-                        className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors cursor-pointer whitespace-nowrap"
-                      >
-                        <span className="w-3 h-3 flex items-center justify-center"><i className="ri-phone-fill text-xs"></i></span>
-                        Call Now
+                      <a href={`tel:${p.phone}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                        <i className="ri-phone-fill text-xs"></i> Call Now
                       </a>
-                      <a
-                        href={`https://wa.me/${provider.whatsApp.replace(/\D/g, '')}?text=Hi ${provider.name}, I found you on Mabidha and I need your services.`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors cursor-pointer whitespace-nowrap"
-                      >
-                        <span className="w-3 h-3 flex items-center justify-center"><i className="ri-whatsapp-fill text-xs"></i></span>
-                        WhatsApp
+                      <a href={`https://wa.me/${p.phone?.replace(/\D/g, '')}?text=Hi ${p.name}, I found you on Nyumbani Hub and I need your services.`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                        <i className="ri-whatsapp-fill text-xs"></i> WhatsApp
                       </a>
                     </div>
                   </div>
@@ -144,7 +141,7 @@ export default function ServiceDetailPage() {
                 <i className="ri-user-search-line text-emerald-400 text-2xl"></i>
               </div>
               <p className="text-gray-600 font-semibold">No providers listed yet</p>
-              <p className="text-gray-400 text-sm mt-1">Be the first {info.label} provider on Mabidha!</p>
+              <p className="text-gray-400 text-sm mt-1">Be the first {info.label} provider on Nyumbani Hub!</p>
               <Link to="/signin" className="inline-block mt-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors whitespace-nowrap">
                 Register as Provider
               </Link>
@@ -155,7 +152,7 @@ export default function ServiceDetailPage() {
           <div className="mt-12 bg-emerald-700 rounded-2xl p-6 md:p-8 text-white text-center">
             <h3 className="font-bold text-xl mb-2">Are You a {info.label} Provider?</h3>
             <p className="text-emerald-100 text-sm max-w-md mx-auto mb-5">
-              Get listed on Mabidha, pass our physical verification, and connect with thousands of Kenyans who need your services.
+              Get listed on Nyumbani Hub, pass our physical verification, and connect with thousands of Kenyans who need your services.
             </p>
             <Link to="/signin" className="inline-block bg-white text-emerald-700 font-bold text-sm px-7 py-3 rounded-xl hover:bg-emerald-50 transition-colors whitespace-nowrap">
               Register as {info.label}

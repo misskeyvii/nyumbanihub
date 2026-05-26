@@ -9,6 +9,18 @@ export default function TrendingSection() {
   useEffect(() => {
     supabase.from('listings').select('*').eq('status', 'live').order('created_at', { ascending: false }).limit(8)
       .then(({ data }) => setListings(data || []));
+
+    const channel = supabase
+      .channel('trending-changes')
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'listings' }, payload => {
+        setListings(prev => prev.filter(l => l.id !== payload.old.id));
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'listings' }, payload => {
+        if (payload.new.status !== 'live') setListings(prev => prev.filter(l => l.id !== payload.new.id));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   if (listings.length === 0) return null;

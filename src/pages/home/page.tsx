@@ -1,3 +1,4 @@
+import SEO from '../../components/base/SEO';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import Footer from '../../components/feature/Footer';
@@ -9,10 +10,16 @@ import FeaturedListings from './components/FeaturedListings';
 import MarketplaceSection from './components/MarketplaceSection';
 import TrustSafety from './components/TrustSafety';
 import EntertainmentSection from './components/EntertainmentSection';
+import TestimonialsSection from './components/TestimonialsSection';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-white font-sans">
+      <SEO
+        title="Verified Homes, Airbnbs, Services & Marketplace in Kenya"
+        description="Nyumbani Hub (nyumbanilink.com) — Kenya's most trusted platform for verified homes, apartments, Airbnbs, hotels, shops, services and marketplace products. Zero scams, 100% physically verified listings across all 47 counties."
+        path="/"
+      />
       <Navbar />
       <main>
         <HeroSection />
@@ -22,6 +29,7 @@ export default function Home() {
         <FeaturedListings />
         <MarketplaceSection />
         <TrustSafety />
+        <TestimonialsSection />
         <EntertainmentSection />
       </main>
       <Footer />

@@ -37,7 +37,7 @@ export default function CategoriesSection() {
           </span>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">What Are You Looking For?</h2>
           <p className="text-gray-500 text-sm mt-2 max-w-md mx-auto">
-            From homes to handcrafted products — every listing on Mabidha is verified and trusted.
+            From homes to handcrafted products — every listing on Nyumbani Hub is verified and trusted.
           </p>
         </div>
 

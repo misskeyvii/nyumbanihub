@@ -1,36 +1,75 @@
-import { useState } from 'react';
+import SEO from '../../components/base/SEO';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import Footer from '../../components/feature/Footer';
-// import VerifiedBadge from '../../components/base/VerifiedBadge';
 import { serviceTypeInfo } from '../../mocks/services';
+import { supabase } from '../../lib/supabase';
+
+const slugToSubcategory: Record<string, string> = {
+  'mama-fua': 'Mama Fua', 'movers': 'Movers', 'caretaker': 'Caretakers',
+  'plumbing': 'Plumbing', 'electrician': 'Electricians', 'security': 'Security',
+  'landscaping': 'Landscaping', 'painting': 'Painting',
+  'gas-delivery': 'Gas Delivery', 'water-dispenser': 'Dispenser Water',
+};
 
 const serviceTypes = [
-  { id: 'mama-fua', icon: 'ri-home-heart-line', color: 'bg-sky-50 text-sky-600', count: 48 },
-  { id: 'movers', icon: 'ri-truck-line', color: 'bg-amber-50 text-amber-600', count: 67 },
-  { id: 'caretaker', icon: 'ri-user-heart-line', color: 'bg-rose-50 text-rose-600', count: 89 },
-  { id: 'plumbing', icon: 'ri-water-flash-line', color: 'bg-blue-50 text-blue-600', count: 54 },
-  { id: 'electrician', icon: 'ri-flashlight-line', color: 'bg-yellow-50 text-yellow-600', count: 72 },
-  { id: 'security', icon: 'ri-shield-user-line', color: 'bg-gray-100 text-gray-700', count: 43 },
-  { id: 'landscaping', icon: 'ri-plant-line', color: 'bg-green-50 text-green-600', count: 38 },
-  { id: 'painting', icon: 'ri-paint-brush-line', color: 'bg-orange-50 text-orange-600', count: 61 },
-  { id: 'gas-delivery', icon: 'ri-fire-line', color: 'bg-red-50 text-red-600', count: 55 },
-  { id: 'water-dispenser', icon: 'ri-drop-line', color: 'bg-cyan-50 text-cyan-600', count: 47 },
+  { id: 'mama-fua', icon: 'ri-home-heart-line', color: 'bg-sky-50 text-sky-600' },
+  { id: 'movers', icon: 'ri-truck-line', color: 'bg-amber-50 text-amber-600' },
+  { id: 'caretaker', icon: 'ri-user-heart-line', color: 'bg-rose-50 text-rose-600' },
+  { id: 'plumbing', icon: 'ri-water-flash-line', color: 'bg-blue-50 text-blue-600' },
+  { id: 'electrician', icon: 'ri-flashlight-line', color: 'bg-yellow-50 text-yellow-600' },
+  { id: 'security', icon: 'ri-shield-user-line', color: 'bg-gray-100 text-gray-700' },
+  { id: 'landscaping', icon: 'ri-plant-line', color: 'bg-green-50 text-green-600' },
+  { id: 'painting', icon: 'ri-paint-brush-line', color: 'bg-orange-50 text-orange-600' },
+  { id: 'gas-delivery', icon: 'ri-fire-line', color: 'bg-red-50 text-red-600' },
+  { id: 'water-dispenser', icon: 'ri-drop-line', color: 'bg-cyan-50 text-cyan-600' },
 ];
 
 export default function ServicesPage() {
   const [hovered, setHovered] = useState('');
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [totalService, setTotalService] = useState(0);
+  const [totalEntertainment, setTotalEntertainment] = useState(0);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('subcategory, account_type')
+        .in('account_type', ['service', 'entertainment'])
+        .eq('is_active', true)
+        .gt('subscription_expires_at', new Date().toISOString());
+      if (!data) return;
+      const c: Record<string, number> = {};
+      let svc = 0, ent = 0;
+      data.forEach(u => {
+        if (u.subcategory) c[u.subcategory] = (c[u.subcategory] || 0) + 1;
+        if (u.account_type === 'service') svc++;
+        if (u.account_type === 'entertainment') ent++;
+      });
+      setCounts(c);
+      setTotalService(svc);
+      setTotalEntertainment(ent);
+    };
+    fetchCounts();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
+      <SEO
+        title="Verified Services in Kenya — Mama Fua, Movers, Plumbers & More"
+        description="Hire background-checked, physically verified service providers in Kenya. Mama Fua, movers, caretakers, plumbers, electricians, security and more on Nyumbani Hub."
+        path="/services"
+      />
       <Navbar />
       <main className="pt-16">
         {/* Hero */}
         <div className="relative bg-gray-900 overflow-hidden">
           <img
             src="https://readdy.ai/api/search-image?query=professional%20service%20workers%20Kenya%20team%20mama%20fua%20cleaner%20mover%20caretaker%20uniformed%20modern%20building%20outdoor%20smiling%20confident%20group%20diverse&width=1400&height=380&seq=svcbg&orientation=landscape"
-            alt="Mabidha Verified Services Kenya"
+            alt="Nyumbani Hub Verified Services Kenya"
             className="w-full h-52 md:h-72 object-cover object-top opacity-45"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/50"></div>
@@ -41,7 +80,7 @@ export default function ServicesPage() {
             </span>
             <h1 className="text-white font-bold text-2xl md:text-4xl">Trusted Services in Kenya</h1>
             <p className="text-white/70 text-sm mt-2 max-w-md">
-              Every Mama Fua, mover, and caretaker is background-checked and physically verified by Mabidha.
+              Every Mama Fua, mover, and caretaker is background-checked and physically verified by Nyumbani Hub.
             </p>
           </div>
         </div>
@@ -50,7 +89,7 @@ export default function ServicesPage() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mb-10">
             {[
-              { value: '500+', label: 'Verified Providers', icon: 'ri-user-check-line', color: 'text-emerald-600' },
+              { value: totalService + totalEntertainment, label: 'Verified Providers', icon: 'ri-user-check-line', color: 'text-emerald-600' },
               { value: '100%', label: 'Background Checked', icon: 'ri-shield-check-line', color: 'text-amber-600' },
               { value: 'Free', label: 'Direct Contact', icon: 'ri-phone-line', color: 'text-rose-500' },
             ].map((stat) => (
@@ -87,7 +126,7 @@ export default function ServicesPage() {
                     <p className="text-sm font-bold text-gray-800">{info?.label}</p>
                     <p className="text-xs text-gray-400 mt-0.5 mb-2">{info?.desc}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-emerald-600 font-medium">{s.count} providers</span>
+                      <span className="text-xs text-emerald-600 font-medium">{counts[slugToSubcategory[s.id]] || 0} providers</span>
                       <span className="w-5 h-5 flex items-center justify-center bg-emerald-50 rounded-full">
                         <i className="ri-arrow-right-s-line text-emerald-600 text-sm"></i>
                       </span>
@@ -143,7 +182,7 @@ export default function ServicesPage() {
           <div className="bg-emerald-700 rounded-2xl p-6 md:p-8 text-white text-center">
             <h3 className="font-bold text-xl mb-2">Are You a Service Provider?</h3>
             <p className="text-emerald-100 text-sm max-w-md mx-auto mb-5">
-              Register on Mabidha, get physically verified, and grow your business with thousands of new clients across Kenya.
+              Register on Nyumbani Hub, get physically verified, and grow your business with thousands of new clients across Kenya.
             </p>
             <Link to="/signin" className="inline-block bg-white text-emerald-700 font-bold text-sm px-7 py-3 rounded-xl hover:bg-emerald-50 transition-colors whitespace-nowrap">
               Register as Provider

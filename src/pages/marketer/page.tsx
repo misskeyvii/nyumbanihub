@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { kenyaCounties } from '../../mocks/listings';
 
 const accountTypes = ['landlord', 'airbnb', 'hotel', 'shop', 'marketplace', 'service', 'entertainment'];
@@ -21,7 +21,7 @@ export default function MarketerPage() {
     const check = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/signin'); return; }
-      const { data: me } = await supabase.from('users').select('role, name').eq('id', session.user.id).single();
+      const { data: me } = await supabaseAdmin.from('users').select('role, name').eq('id', session.user.id).single();
       if (me?.role !== 'marketer') { navigate('/'); return; }
       setMarketerName(me.name || 'Marketer');
       setAuthChecking(false);
@@ -41,7 +41,7 @@ export default function MarketerPage() {
     if (signUpError) { setError(signUpError.message); setCreating(false); return; }
     const userId = data.user?.id;
     if (userId) {
-      const { error: insertError } = await supabase.from('users').insert({
+      const { error: insertError } = await supabaseAdmin.from('users').insert({
         id: userId, name: form.name, email: form.email,
         phone: form.phone || null, county: form.county || null,
         area: form.area || null, account_type: form.account_type,

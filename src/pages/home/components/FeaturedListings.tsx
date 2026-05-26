@@ -9,9 +9,22 @@ export default function FeaturedListings() {
   useEffect(() => {
     supabase.from('listings').select('*').eq('status', 'live').order('created_at', { ascending: false }).limit(5)
       .then(({ data }) => setListings(data || []));
+
+    const channel = supabase
+      .channel('featured-changes')
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'listings' }, payload => {
+        setListings(prev => prev.filter(l => l.id !== payload.old.id));
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'listings' }, payload => {
+        if (payload.new.status !== 'live') setListings(prev => prev.filter(l => l.id !== payload.new.id));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   if (listings.length === 0) return null;
+  // feature products 
 
   const featured = listings[0];
   const rest = listings.slice(1, 5);
@@ -25,7 +38,7 @@ export default function FeaturedListings() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Latest Listings</h2>
-            <p className="text-gray-500 text-sm mt-1">{listings.length} verified listings live on Mabidha</p>
+            <p className="text-gray-500 text-sm mt-1">{listings.length} verified listings live on Nyumbani Hub</p>
           </div>
           <Link to="/explore" className="hidden sm:inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium whitespace-nowrap">
             See All <i className="ri-arrow-right-line text-sm"></i>

@@ -31,7 +31,7 @@ export default function ProductDetailPage() {
   const mapQuery = encodeURIComponent(`${product.shopLocation}, ${product.county}, Kenya`);
   const mapSrc = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
   const whatsappNumber = product.shopPhone.replace(/\D/g, '').replace(/^0/, '254');
-  const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi! I saw your product "${product.name}" on Mabidha and I'm interested.`)}`;
+  const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi! I saw your product "${product.name}" on Nyumbani Hub and I'm interested.`)}`;
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">

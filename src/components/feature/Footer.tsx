@@ -10,9 +10,11 @@ export default function Footer() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;
+    const sanitized = email.trim().toLowerCase().replace(/[<>"']/g, '');
+    if (!sanitized.match(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)) return;
     setStatus('loading');
     try {
-      const body = new URLSearchParams({ email });
+      const body = new URLSearchParams({ email: sanitized });
       const res = await fetch(FORM_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -73,8 +75,8 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link to="/">
               <img
-                src="https://public.readdy.ai/ai/img_res/735ac14e-6136-4ce5-8bb3-d1d2e33b0f68.png"
-                alt="Mabidha"
+                src="https://i.postimg.cc/qM8Nz01k/Untitled-design.png"
+                alt="Nyumbani Hub"
                 className="h-9 w-auto"
               />
             </Link>
@@ -82,8 +84,13 @@ export default function Footer() {
               Kenya&apos;s most trusted platform for verified homes, stays, services, and marketplace products.
             </p>
             <div className="flex items-center gap-3 mt-4">
-              {['ri-facebook-fill', 'ri-twitter-x-fill', 'ri-instagram-line', 'ri-tiktok-fill'].map((icon) => (
-                <a key={icon} href="#" rel="nofollow" className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-emerald-600 hover:text-white text-gray-500 rounded-full transition-colors cursor-pointer">
+              {[
+                { icon: 'ri-facebook-fill', href: 'https://www.facebook.com/profile.php?id=61570075493776' },
+                { icon: 'ri-twitter-x-fill', href: 'https://x.com/nyumbanilink' },
+                { icon: 'ri-instagram-line', href: 'https://www.instagram.com/nyumbani_link' },
+                { icon: 'ri-tiktok-fill', href: 'https://www.tiktok.com/@nyumbanilink' },
+              ].map(({ icon, href }) => (
+                <a key={icon} href={href} target="_blank" rel="nofollow noreferrer" className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-emerald-600 hover:text-white text-gray-500 rounded-full transition-colors cursor-pointer">
                   <i className={`${icon} text-sm`}></i>
                 </a>
               ))}
@@ -92,15 +99,17 @@ export default function Footer() {
 
           {/* Explore */}
           <div>
-            <h4 className="font-semibold text-gray-900 text-sm mb-3">
-              <a href="#explore" className="hover:text-emerald-600 transition-colors">Explore</a>
-            </h4>
+            <h4 className="font-semibold text-gray-900 text-sm mb-3">Explore</h4>
             <ul className="space-y-2">
-              {['Homes & Rentals', 'Airbnb Stays', 'Hotels', 'Services', 'Marketplace'].map((item) => (
-                <li key={item}>
-                  <a href="#" rel="nofollow" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">
-                    {item}
-                  </a>
+              {[
+                { label: 'Homes & Rentals', path: '/explore?category=homes' },
+                { label: 'Airbnb Stays', path: '/explore?category=airbnb' },
+                { label: 'Hotels', path: '/explore?category=hotels' },
+                { label: 'Services', path: '/services' },
+                { label: 'Marketplace', path: '/marketplace' },
+              ].map(({ label, path }) => (
+                <li key={label}>
+                  <Link to={path} className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{label}</Link>
                 </li>
               ))}
             </ul>
@@ -108,13 +117,11 @@ export default function Footer() {
 
           {/* Counties */}
           <div>
-            <h4 className="font-semibold text-gray-900 text-sm mb-3">
-              <a href="#counties" className="hover:text-emerald-600 transition-colors">Popular Counties</a>
-            </h4>
+            <h4 className="font-semibold text-gray-900 text-sm mb-3">Popular Counties</h4>
             <ul className="space-y-2">
               {['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Malindi'].map((c) => (
                 <li key={c}>
-                  <a href="#" rel="nofollow" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{c}</a>
+                  <Link to={`/explore?county=${c}`} className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{c}</Link>
                 </li>
               ))}
             </ul>
@@ -126,13 +133,23 @@ export default function Footer() {
               <a href="#company" className="hover:text-emerald-600 transition-colors">Company</a>
             </h4>
             <ul className="space-y-2">
-              {['About Mabidha', 'How It Works', 'Anti-Scam Policy', 'List Your Property', 'Pricing', 'Contact Us'].map((item) => (
-                <li key={item}>
-                  <a href="#" rel="nofollow" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{item}</a>
-                </li>
-              ))}
+{['About Nyumbani Hub', 'How It Works', 'Anti-Scam Policy', 'List Your Property', 'Pricing', 'Contact Us'].map((item) => (
+  <li key={item}>
+    {item === 'Anti-Scam Policy' ? (
+      <Link to="/anti-scam" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{item}</Link>
+    ) : item === 'How It Works' ? (
+      <Link to="/how-it-works" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{item}</Link>
+    ) : item === 'Contact Us' ? (
+      <Link to="/contact" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{item}</Link>
+    ) : (
+      <a href="#" rel="nofollow" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{item}</a>
+    )}
+  </li>
+))}
             </ul>
+
           </div>
+
         </div>
       </div>
 
@@ -140,15 +157,27 @@ export default function Footer() {
       <div className="border-t border-gray-200 px-4 md:px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-gray-400 text-xs text-center sm:text-left">
-            &copy; 2026 Mabidha Kenya. All rights reserved. Trusted verified listings platform.
+            © 2026 Nyumbani Hub Kenya. All rights reserved. Trusted verified listings platform.
           </p>
           <div className="flex items-center gap-4">
-            <a href="#" rel="nofollow" className="text-gray-400 hover:text-gray-600 text-xs transition-colors">Privacy Policy</a>
-            <a href="#" rel="nofollow" className="text-gray-400 hover:text-gray-600 text-xs transition-colors">Terms of Use</a>
-            <a href="#" rel="nofollow" className="text-gray-400 hover:text-gray-600 text-xs transition-colors">Anti-Scam</a>
+<Link to="/privacy" className="text-gray-400 hover:text-gray-600 text-xs transition-colors">Privacy Policy</Link>
+<Link to="/terms" className="text-gray-400 hover:text-gray-600 text-xs transition-colors">Terms of Use</Link>
+<Link to="/anti-scam" className="text-gray-400 hover:text-gray-600 text-xs transition-colors">Anti-Scam</Link>
           </div>
         </div>
       </div>
+
+      {/* Floating WhatsApp Support Button */}
+      <a
+        href="https://wa.me/254703542846?text=Hi Nyumbani Hub, I need help with your platform."
+        target="_blank"
+        rel="nofollow noreferrer"
+        className="fixed bottom-24 md:bottom-8 left-4 w-12 h-12 flex items-center justify-center bg-[#25D366] hover:bg-[#20ba58] text-white rounded-full shadow-lg transition-all cursor-pointer z-40"
+        title="Chat with us on WhatsApp"
+      >
+        <i className="ri-whatsapp-fill text-2xl"></i>
+      </a>
     </footer>
   );
 }
+

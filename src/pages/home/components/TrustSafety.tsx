@@ -1,22 +1,36 @@
+import { useEffect, useState } from 'react';
+
 export default function TrustSafety() {
+  const [stats, setStats] = useState({ listings: 0, users: 0 });
+
+  useEffect(() => {
+    import('../../../lib/supabase').then(({ supabase }) => {
+      Promise.all([
+        supabase.from('listings').select('id', { count: 'exact', head: true }).eq('status', 'live'),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('role', 'user'),
+      ]).then(([{ count: listings }, { count: users }]) => {
+        setStats({ listings: listings || 0, users: users || 0 });
+      });
+    });
+  }, []);
   const features = [
     {
       icon: 'ri-shield-check-fill',
       color: 'bg-emerald-100 text-emerald-600',
       title: 'Physical Verification',
-      desc: 'Every landlord, business owner, and service provider is physically visited and verified by our Mabidha agents before being approved.',
+      desc: 'Every landlord, business owner, and service provider is physically visited and verified by our Nyumbani Hub agents before being approved.',
     },
     {
       icon: 'ri-eye-fill',
       color: 'bg-emerald-100 text-emerald-600',
       title: 'Property Inspection',
-      desc: 'We inspect every property listed on Mabidha to ensure images and descriptions match reality. No misleading photos.',
+      desc: 'We inspect every property listed on Nyumbani Hub to ensure images and descriptions match reality. No misleading photos.',
     },
     {
       icon: 'ri-map-pin-2-fill',
       color: 'bg-amber-100 text-amber-600',
       title: 'Real Location Traceability',
-      desc: 'Every shop and service provider on Mabidha has a verified physical address. You can always trace the seller in real life.',
+      desc: 'Every shop and service provider on Nyumbani Hub has a verified physical address. You can always trace the seller in real life.',
     },
     {
       icon: 'ri-user-follow-fill',
@@ -44,13 +58,13 @@ export default function TrustSafety() {
         {/* Header */}
         <div className="text-center mb-12">
           <span className="inline-block text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full mb-3">
-            Why Choose Mabidha?
+            Why Choose Nyumbani Hub?
           </span>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
             Built on Trust. Powered by Verification.
           </h2>
           <p className="text-gray-500 text-sm mt-2 max-w-xl mx-auto">
-            Mabidha was built to eliminate property and service scams in Kenya. Every feature is designed to protect you.
+            Nyumbani Hub was built to eliminate property and service scams in Kenya. Every feature is designed to protect you.
           </p>
         </div>
 
@@ -78,7 +92,7 @@ export default function TrustSafety() {
           <div className="flex-1 text-center md:text-left">
             <h3 className="text-white font-bold text-xl mb-1">Spotted a Scam? Report It.</h3>
             <p className="text-emerald-100 text-sm leading-relaxed">
-              If you encounter any suspicious listing on Mabidha, report it immediately. Our team reviews and acts within 24 hours. Together, we keep Kenya safe.
+              If you encounter any suspicious listing on Nyumbani Hub, report it immediately. Our team reviews and acts within 24 hours. Together, we keep Kenya safe.
             </p>
           </div>
           <button className="bg-white text-emerald-700 font-bold text-sm px-6 py-3 rounded-xl hover:bg-emerald-50 transition-colors whitespace-nowrap cursor-pointer flex-shrink-0">
@@ -89,10 +103,10 @@ export default function TrustSafety() {
         {/* Stats Bar */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { val: '5,400+', label: 'Verified Listings', icon: 'ri-list-check-3' },
+            { val: `${stats.listings.toLocaleString()}+`, label: 'Verified Listings', icon: 'ri-list-check-3' },
             { val: '98%', label: 'Scam-Free Rate', icon: 'ri-shield-check-line' },
             { val: '47', label: 'Kenyan Counties', icon: 'ri-map-2-line' },
-            { val: '12,000+', label: 'Happy Users', icon: 'ri-user-smile-line' },
+            { val: `${stats.users.toLocaleString()}+`, label: 'Verified Users', icon: 'ri-user-smile-line' },
           ].map((s) => (
             <div key={s.label} className="text-center bg-gray-50 rounded-2xl p-5 border border-gray-100">
               <div className="w-8 h-8 flex items-center justify-center mx-auto mb-2">

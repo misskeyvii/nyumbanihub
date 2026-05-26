@@ -1,16 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { marketplaceProducts } from '../../../mocks/marketplace';
-import ProductCard from '../../../components/base/ProductCard';
+import { supabase } from '../../../lib/supabase';
 
 const productCategories = ['All', 'Electronics', 'Fashion & Crafts', 'Fresh Produce', 'Food & Drinks', 'Furniture'];
 
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function MarketplaceSection() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [displayed, setDisplayed] = useState<any[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const filtered = activeCategory === 'All'
-    ? marketplaceProducts
-    : marketplaceProducts.filter((p) => p.category === activeCategory);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data } = await supabase
+        .from('listings')
+        .select('id, title, price, images, county, area, listing_type, user_id')
+        .eq('listing_type', 'marketplace')
+        .eq('status', 'live');
+      setAllProducts(data || []);
+    };
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const rotate = () => {
+      const pool = activeCategory === 'All'
+        ? allProducts
+        : allProducts.filter(p => p.category === activeCategory);
+      setDisplayed(shuffled(pool).slice(0, 8));
+    };
+    rotate();
+    timerRef.current = setInterval(rotate, 20 * 60 * 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [allProducts, activeCategory]);
 
   return (
     <section className="py-14 px-4 md:px-6 bg-gray-50" id="marketplace">
@@ -73,8 +104,30 @@ export default function MarketplaceSection() {
 
         {/* Products Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {displayed.length === 0 ? (
+            <div className="col-span-4 text-center py-12 text-gray-400 text-sm">No marketplace products yet</div>
+          ) : displayed.map((product) => (
+            <Link key={product.id} to={`/listing/${product.id}`} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-amber-200 transition-all group block">
+              <div className="w-full aspect-square overflow-hidden bg-gray-100">
+                {product.images?.[0] ? (
+                  <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <i className="ri-image-line text-gray-300 text-3xl"></i>
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <p className="font-semibold text-gray-900 text-sm leading-snug line-clamp-2">{product.title}</p>
+                {(product.area || product.county) && (
+                  <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    <i className="ri-map-pin-2-line text-emerald-500 text-xs"></i>
+                    {[product.area, product.county].filter(Boolean).join(', ')}
+                  </p>
+                )}
+                <p className="text-emerald-700 font-bold text-sm mt-1">{product.price?.toString().includes('KSh') ? product.price : `KSh ${product.price}`}</p>
+              </div>
+            </Link>
           ))}
         </div>
 
@@ -85,7 +138,7 @@ export default function MarketplaceSection() {
           </div>
           <h3 className="font-bold text-gray-900 text-lg">Are You a Shop Owner?</h3>
           <p className="text-gray-500 text-sm mt-1 max-w-md mx-auto">
-            List your products on Mabidha and reach thousands of verified customers. Your shop will be physically inspected before approval.
+            List your products on Nyumbani Hub and reach thousands of verified customers. Your shop will be physically inspected before approval.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
             <Link
