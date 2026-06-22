@@ -55,7 +55,7 @@ BEGIN
 
   -- Mark the pending request approved
   UPDATE public.pending_requests
-  SET status = 'approved', processed_at = now()
+  SET status = 'approved'
   WHERE id = pr.id;
 
   -- Optionally: If you track promo_slots in app_config, increment here (uncomment and adjust)

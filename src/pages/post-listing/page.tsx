@@ -31,6 +31,7 @@ export default function PostListingPage() {
   const [accountType, setAccountType] = useState(localStorage.getItem('accountType') ?? '');
   const [extraAccountTypes, setExtraAccountTypes] = useState<string[]>([]);
   const [subscriptionDetails, setSubscriptionDetails] = useState<Record<string, { expires_at?: string }> | null>(null);
+  const [approvedRequestTypes, setApprovedRequestTypes] = useState<string[]>([]);
   const [userRole, setUserRole] = useState(localStorage.getItem('userRole') ?? '');
   const [userPhone, setUserPhone] = useState(localStorage.getItem('userPhone') ?? '');
   const [userCounty, setUserCounty] = useState(localStorage.getItem('userCounty') ?? '');
@@ -40,21 +41,42 @@ export default function PostListingPage() {
   const { startBackgroundUpload } = useUpload();
 
   useEffect(() => {
+    const parseDetails = (value: any) => {
+      if (!value) return null;
+      if (typeof value === 'object') return value;
+      try {
+        return JSON.parse(value);
+      } catch {
+        return null;
+      }
+    };
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { setAuthChecked(true); return; }
-      const { data } = await supabase
-        .from('users')
-        .select('account_type, extra_account_types, role, phone, county, name, subscription_expires_at, subscription_details')
-        .eq('id', session.user.id)
-        .single();
+      const [{ data }, { data: approvedRequests }] = await Promise.all([
+        supabase
+          .from('users')
+          .select('account_type, extra_account_types, role, phone, county, name, subscription_expires_at, subscription_details')
+          .eq('id', session.user.id)
+          .single(),
+        supabase
+          .from('pending_requests')
+          .select('account_type')
+          .eq('user_id', session.user.id)
+          .in('status', ['approved'])
+      ]);
+
       if (data) {
         const at = data.account_type ?? '';
-        const extraTypes = data.extra_account_types || [];
+        const extraTypes = Array.isArray(data.extra_account_types) ? data.extra_account_types : [];
         const role = data.role ?? '';
-        const details = data.subscription_details || null;
+        const details = parseDetails(data.subscription_details);
+        const approvedTypes = Array.isArray(approvedRequests) ? approvedRequests.map((r: any) => r.account_type).filter(Boolean) : [];
+
         setAccountType(at);
         setExtraAccountTypes(extraTypes);
         setSubscriptionDetails(details as Record<string, { expires_at?: string }> | null);
+        setApprovedRequestTypes(approvedTypes);
         setUserRole(role);
         setUserPhone(data.phone ?? '');
         setUserCounty(data.county ?? '');
@@ -80,6 +102,7 @@ export default function PostListingPage() {
     accountType,
     ...extraAccountTypes,
     ...Object.keys(subscriptionDetails || {}),
+    ...approvedRequestTypes,
   ].filter(Boolean)));
   const allowedTypes = !authChecked
     ? null // still loading — don't restrict yet
