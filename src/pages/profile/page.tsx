@@ -63,6 +63,7 @@ export default function ProfilePage() {
   const isServiceProvider = approvedTypes.length > 0
     ? approvedTypes.every(t => SERVICE_TYPES.includes(t))
     : SERVICE_TYPES.includes(accountType);
+  const hasSubscription = approvedTypes.length > 0 && (subscriptionExpiresAt || Object.keys(subscriptionDetails).length > 0);
   const isMarketer = userRole === 'marketer';
   const initials = userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
@@ -443,7 +444,7 @@ export default function ProfilePage() {
                   </div>
                 )}
                 <p className="text-xs text-gray-400 mt-1">Tap the camera icon to update your profile photo</p>
-                {subscriptionExpiresAt && (
+                {hasSubscription && (
                   <button
                     onClick={() => { setShowRenew(true); setRenewStep('account'); setRenewPhone(''); setRenewSuccess(false); setRenewError(''); setRenewMonths(1); if (approvedTypes.length === 1) { setRenewAccountType(approvedTypes[0]); } }}
                     className="mt-2 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
