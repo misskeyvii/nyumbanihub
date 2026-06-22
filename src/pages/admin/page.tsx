@@ -111,7 +111,7 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     const { data } = await supabase
       .from('users')
-      .select('id, name, email, phone, county, area, account_type, extra_account_types, role, is_active, subscription_expires_at, created_at')
+      .select('id, name, email, phone, county, area, account_type, extra_account_types, role, is_active, subscription_expires_at, subscription_details, created_at')
       .not('role', 'in', '(admin,marketer)')
       .order('created_at', { ascending: false });
     setUsers(data || []);
@@ -188,7 +188,22 @@ export default function AdminPage() {
 
     const currentDetails = (userData.subscription_details as Record<string, string>) || {};
     const newDetails = { ...currentDetails, [req.account_type]: expiresStr };
+    // Try to run atomic RPC to approve the request (updates users, pending_requests, subscription_details)
+    try {
+      const { error: rpcError } = await supabaseAdmin.rpc('approve_request', { pr_uuid: req.id });
+      if (!rpcError) {
+        await fetchUsers();
+        setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
+        setApprovingId(null);
+        return;
+      }
+      // If RPC failed, fall back to manual updates below
+      console.warn('approve_request RPC failed, falling back to manual update:', rpcError.message);
+    } catch (e) {
+      console.warn('approve_request RPC error, falling back to manual update', e);
+    }
 
+    // Fallback manual update (keeps previous behavior)
     let updateData: any = {
       ...(req.phone && { phone: req.phone }),
       ...(req.county && { county: req.county }),
@@ -646,32 +661,41 @@ export default function AdminPage() {
                       <label className="text-[10px] font-semibold text-gray-400 block mb-2">Listing Account Types</label>
                       {/* Current types as removable tags */}
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {[u.account_type, ...(u.extra_account_types || [])].filter(Boolean).map(at => (
-                          <span key={at} className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full capitalize">
-                            {at}
-                            <button
-                              onClick={async () => {
-                                if (!confirm(`Remove "${at}" from ${u.name}?`)) return;
-                                if (at === u.account_type) {
-                                  // Remove primary — promote first extra or set null
-                                  const extras = (u.extra_account_types || []).filter(e => e !== at);
-                                  const newPrimary = extras[0] || null;
-                                  const newExtras = extras.slice(1);
-                                  await supabaseAdmin.from('users').update({ account_type: newPrimary, extra_account_types: newExtras }).eq('id', u.id);
-                                  setUsers(users.map(x => x.id === u.id ? { ...x, account_type: newPrimary || '', extra_account_types: newExtras } : x));
-                                } else {
-                                  // Remove from extras
-                                  const newExtras = (u.extra_account_types || []).filter(e => e !== at);
-                                  await supabaseAdmin.from('users').update({ extra_account_types: newExtras }).eq('id', u.id);
-                                  setUsers(users.map(x => x.id === u.id ? { ...x, extra_account_types: newExtras } : x));
-                                }
-                              }}
-                              className="text-emerald-500 hover:text-rose-500 cursor-pointer transition-colors"
-                            >
-                              <i className="ri-close-line text-xs"></i>
-                            </button>
-                          </span>
-                        ))}
+                        {[u.account_type, ...(u.extra_account_types || [])].filter(Boolean).map(at => {
+                          const subDetails = (((u as any).subscription_details) || {}) as Record<string, string>;
+                          const expiry = subDetails?.[at] || u.subscription_expires_at;
+                          return (
+                            <span key={at} className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full capitalize">
+                              <span>
+                                {at}
+                                {expiry && (
+                                  <span className="ml-2 text-[10px] font-normal text-gray-500">{new Date(expiry).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                )}
+                              </span>
+                              <button
+                                onClick={async () => {
+                                  if (!confirm(`Remove "${at}" from ${u.name}?`)) return;
+                                  if (at === u.account_type) {
+                                    // Remove primary — promote first extra or set null
+                                    const extras = (u.extra_account_types || []).filter(e => e !== at);
+                                    const newPrimary = extras[0] || null;
+                                    const newExtras = extras.slice(1);
+                                    await supabaseAdmin.from('users').update({ account_type: newPrimary, extra_account_types: newExtras }).eq('id', u.id);
+                                    setUsers(users.map(x => x.id === u.id ? { ...x, account_type: newPrimary || '', extra_account_types: newExtras } : x));
+                                  } else {
+                                    // Remove from extras
+                                    const newExtras = (u.extra_account_types || []).filter(e => e !== at);
+                                    await supabaseAdmin.from('users').update({ extra_account_types: newExtras }).eq('id', u.id);
+                                    setUsers(users.map(x => x.id === u.id ? { ...x, extra_account_types: newExtras } : x));
+                                  }
+                                }}
+                                className="text-emerald-500 hover:text-rose-500 cursor-pointer transition-colors"
+                              >
+                                <i className="ri-close-line text-xs"></i>
+                              </button>
+                            </span>
+                          );
+                        })}
                         {![u.account_type, ...(u.extra_account_types || [])].filter(Boolean).length && (
                           <span className="text-xs text-gray-400">No account types assigned</span>
                         )}
