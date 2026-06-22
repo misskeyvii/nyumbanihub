@@ -674,19 +674,26 @@ export default function AdminPage() {
                               </span>
                               <button
                                 onClick={async () => {
-                                  if (!confirm(`Remove "${at}" from ${u.name}?`)) return;
-                                  if (at === u.account_type) {
-                                    // Remove primary — promote first extra or set null
-                                    const extras = (u.extra_account_types || []).filter(e => e !== at);
-                                    const newPrimary = extras[0] || null;
-                                    const newExtras = extras.slice(1);
-                                    await supabaseAdmin.from('users').update({ account_type: newPrimary, extra_account_types: newExtras }).eq('id', u.id);
-                                    setUsers(users.map(x => x.id === u.id ? { ...x, account_type: newPrimary || '', extra_account_types: newExtras } : x));
-                                  } else {
-                                    // Remove from extras
-                                    const newExtras = (u.extra_account_types || []).filter(e => e !== at);
-                                    await supabaseAdmin.from('users').update({ extra_account_types: newExtras }).eq('id', u.id);
-                                    setUsers(users.map(x => x.id === u.id ? { ...x, extra_account_types: newExtras } : x));
+                                  if (!confirm(`Remove "${at}" from ${u.name}? All listings posted under this account type will be deleted.`)) return;
+                                  try {
+                                    // Use RPC to safely delete account type and listings
+                                    const { data, error } = await supabaseAdmin.rpc('delete_user_account_type', { 
+                                      p_user_id: u.id, 
+                                      p_account_type: at 
+                                    });
+                                    
+                                    if (error) throw error;
+                                    if (data?.[0]?.success === false) {
+                                      throw new Error(data[0].message);
+                                    }
+                                    
+                                    // Update UI
+                                    const deletedCount = data?.[0]?.deleted_listing_count || 0;
+                                    alert(`Removed "${at}" from ${u.name}. Deleted ${deletedCount} listing(s).`);
+                                    await fetchUsers();
+                                  } catch (err) {
+                                    alert(`Failed to remove account type: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                                    await fetchUsers();
                                   }
                                 }}
                                 className="text-emerald-500 hover:text-rose-500 cursor-pointer transition-colors"

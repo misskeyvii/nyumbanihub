@@ -315,6 +315,42 @@ export default function ProfilePage() {
     setDeletingId(null);
   };
 
+  const handleDeleteAccountType = async (typeToDelete: string) => {
+    if (!confirm(`Remove "${typeToDelete}" account? All listings posted under this account type will be deleted.`)) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Use RPC to safely delete account type and listings
+      const { data, error } = await supabase.rpc('delete_user_account_type', { 
+        p_user_id: session.user.id, 
+        p_account_type: typeToDelete 
+      });
+
+      if (error) throw error;
+      if (data?.[0]?.success === false) {
+        throw new Error(data[0].message);
+      }
+
+      // Update UI
+      const deletedCount = data?.[0]?.deleted_listing_count || 0;
+      const newApprovedTypes = approvedTypes.filter(t => t !== typeToDelete);
+      setApprovedTypes(newApprovedTypes);
+      setListings(listings.filter(l => l.listing_type !== typeToDelete));
+      
+      // Update localStorage if primary account was deleted
+      const currentPrimary = localStorage.getItem('accountType') || '';
+      if (typeToDelete === currentPrimary) {
+        const newPrimary = newApprovedTypes[0] || '';
+        localStorage.setItem('accountType', newPrimary);
+      }
+
+      alert(`Removed "${typeToDelete}" account. Deleted ${deletedCount} listing(s).`);
+    } catch (err) {
+      alert(`Failed to remove account type: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <Navbar />
@@ -418,16 +454,30 @@ export default function ProfilePage() {
                 {approvedTypes.length > 0 ? (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {approvedTypes.map(type => (
-                      <span key={type} className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full capitalize">
+                      <span key={type} className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full capitalize">
                         <i className="ri-verified-badge-fill text-xs"></i>
                         {type}
+                        <button
+                          onClick={() => handleDeleteAccountType(type)}
+                          className="text-emerald-500 hover:text-rose-500 cursor-pointer transition-colors ml-0.5"
+                          title={`Remove ${type} account`}
+                        >
+                          <i className="ri-close-line text-xs"></i>
+                        </button>
                       </span>
                     ))}
                   </div>
                 ) : accountType ? (
-                  <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full mt-1 capitalize">
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full mt-1 capitalize">
                     <i className="ri-verified-badge-fill text-xs"></i>
                     {accountType}
+                    <button
+                      onClick={() => handleDeleteAccountType(accountType)}
+                      className="text-emerald-500 hover:text-rose-500 cursor-pointer transition-colors ml-0.5"
+                      title={`Remove ${accountType} account`}
+                    >
+                      <i className="ri-close-line text-xs"></i>
+                    </button>
                   </span>
                 ) : null}
                 {/* Per-account subscription expiry */}
