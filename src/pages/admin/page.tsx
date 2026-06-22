@@ -139,10 +139,14 @@ export default function AdminPage() {
   };
 
   const fetchRequests = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('pending_requests')
       .select('*')
       .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Failed to fetch pending requests', error);
+      return;
+    }
     setRequests(data || []);
   };
 
@@ -165,14 +169,24 @@ export default function AdminPage() {
 
   const handleApproveRequest = async (req: PendingRequest) => {
     setApprovingId(req.id);
-    const { data: userData } = await supabaseAdmin.from('users').select('account_type, extra_account_types, subscription_details').eq('id', req.user_id).single();
-    
+    const { data: userData, error: userDataError } = await supabaseAdmin
+      .from('users')
+      .select('account_type, extra_account_types, subscription_details')
+      .eq('id', req.user_id)
+      .single();
+
+    if (userDataError || !userData) {
+      alert('Unable to approve request: could not load user data.');
+      setApprovingId(null);
+      return;
+    }
+
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
     const expiresStr = expiresAt.toISOString();
+    const notificationMessage = `Your "${req.account_type}" listing account for "${req.business_name}" has been approved! Your ${req.account_type} subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`;
 
-    // Per-account subscription details
-    const currentDetails = (userData?.subscription_details as Record<string, string>) || {};
+    const currentDetails = (userData.subscription_details as Record<string, string>) || {};
     const newDetails = { ...currentDetails, [req.account_type]: expiresStr };
 
     let updateData: any = {
@@ -182,10 +196,10 @@ export default function AdminPage() {
       subscription_expires_at: expiresStr,
       subscription_details: newDetails,
       has_notification: true,
-      notification_message: `Your "${req.account_type}" listing account for "${req.business_name}" has been approved! Your ${req.account_type} subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`,
+      notification_message: notificationMessage,
     };
 
-    const hasPrimary = !!userData?.account_type && userData.account_type.trim() !== '';
+    const hasPrimary = !!userData.account_type && userData.account_type.trim() !== '';
     if (!hasPrimary) {
       updateData.account_type = req.account_type;
     } else if (userData.account_type !== req.account_type) {
@@ -195,29 +209,41 @@ export default function AdminPage() {
       }
     }
 
-    const { error } = await supabaseAdmin.from('users').update(updateData).eq('id', req.user_id);
-    if (error) {
-      alert('Error: ' + error.message);
+    const { error: userUpdateError } = await supabaseAdmin
+      .from('users')
+      .update(updateData)
+      .eq('id', req.user_id);
+
+    if (userUpdateError) {
+      alert('Error approving account: ' + userUpdateError.message);
       setApprovingId(null);
       return;
     }
-    await supabaseAdmin.from('pending_requests').update({ status: 'approved' }).eq('id', req.id);
 
-    // Increment promo slots used
-    const { data: slotConfig } = await supabaseAdmin.from('app_config').select('value').eq('key', 'promo_slots_used').single();
-    const currentUsed = parseInt(slotConfig?.value || '0');
-    const total = 200;
-    if (currentUsed < total) {
-      await supabaseAdmin.from('app_config').update({ value: String(currentUsed + 1) }).eq('key', 'promo_slots_used');
+    const { error: requestUpdateError } = await supabaseAdmin
+      .from('pending_requests')
+      .update({ status: 'approved' })
+      .eq('id', req.id);
+
+    if (requestUpdateError) {
+      alert('Error updating approval status: ' + requestUpdateError.message);
+      setApprovingId(null);
+      return;
     }
 
-    // Send in-app notification — merge into same update to avoid overwriting
-    await supabaseAdmin.from('users').update({ 
-      has_notification: true,
-      notification_message: `Your "${req.account_type}" listing account for "${req.business_name}" has been approved! Your ${req.account_type} subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`
-    }).eq('id', req.user_id);
+    const { data: slotConfig, error: slotConfigError } = await supabaseAdmin
+      .from('app_config')
+      .select('value')
+      .eq('key', 'promo_slots_used')
+      .single();
+    if (!slotConfigError) {
+      const currentUsed = parseInt(slotConfig?.value || '0');
+      const total = 200;
+      if (currentUsed < total) {
+        await supabaseAdmin.from('app_config').update({ value: String(currentUsed + 1) }).eq('key', 'promo_slots_used');
+      }
+    }
 
-    // Refresh users list so admin sees updated account types immediately
     await fetchUsers();
     setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
     setApprovingId(null);
