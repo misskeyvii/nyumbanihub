@@ -30,6 +30,7 @@ const listingTypes = [
 export default function PostListingPage() {
   const [accountType, setAccountType] = useState(localStorage.getItem('accountType') ?? '');
   const [extraAccountTypes, setExtraAccountTypes] = useState<string[]>([]);
+  const [subscriptionDetails, setSubscriptionDetails] = useState<Record<string, { expires_at?: string }> | null>(null);
   const [userRole, setUserRole] = useState(localStorage.getItem('userRole') ?? '');
   const [userPhone, setUserPhone] = useState(localStorage.getItem('userPhone') ?? '');
   const [userCounty, setUserCounty] = useState(localStorage.getItem('userCounty') ?? '');
@@ -43,15 +44,17 @@ export default function PostListingPage() {
       if (!session) { setAuthChecked(true); return; }
       const { data } = await supabase
         .from('users')
-        .select('account_type, extra_account_types, role, phone, county, name, subscription_expires_at')
+        .select('account_type, extra_account_types, role, phone, county, name, subscription_expires_at, subscription_details')
         .eq('id', session.user.id)
         .single();
       if (data) {
         const at = data.account_type ?? '';
         const extraTypes = data.extra_account_types || [];
         const role = data.role ?? '';
+        const details = data.subscription_details || null;
         setAccountType(at);
         setExtraAccountTypes(extraTypes);
+        setSubscriptionDetails(details as Record<string, { expires_at?: string }> | null);
         setUserRole(role);
         setUserPhone(data.phone ?? '');
         setUserCounty(data.county ?? '');
@@ -60,16 +63,24 @@ export default function PostListingPage() {
         localStorage.setItem('userPhone', data.phone ?? '');
         localStorage.setItem('userCounty', data.county ?? '');
         localStorage.setItem('userName', data.name ?? '');
-        if (data.subscription_expires_at && new Date(data.subscription_expires_at) < new Date()) {
-          setIsExpired(true);
-        }
+
+        const expiryDates = [
+          ...Object.values(details || {}).map((d: any) => d?.expires_at).filter(Boolean),
+          data.subscription_expires_at || '',
+        ].filter(Boolean) as string[];
+        const allExpired = expiryDates.length > 0 && expiryDates.every(date => new Date(date) < new Date());
+        setIsExpired(allExpired);
       }
       setAuthChecked(true);
     });
   }, []);
 
   // Combine all allowed listing types — computed from state (always fresh from DB)
-  const allAccountTypes = [accountType, ...extraAccountTypes].filter(Boolean);
+  const allAccountTypes = Array.from(new Set([
+    accountType,
+    ...extraAccountTypes,
+    ...Object.keys(subscriptionDetails || {}),
+  ].filter(Boolean)));
   const allowedTypes = !authChecked
     ? null // still loading — don't restrict yet
     : allAccountTypes.length > 0
