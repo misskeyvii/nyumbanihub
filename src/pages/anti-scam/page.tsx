@@ -4,6 +4,7 @@ import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import Footer from '../../components/feature/Footer';
 
+// kisumu one
 export default function AntiScamPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
