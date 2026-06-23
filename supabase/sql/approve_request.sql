@@ -33,6 +33,7 @@ BEGIN
   IF u.account_type IS NULL OR u.account_type = '' THEN
     UPDATE public.users
     SET account_type = pr.account_type,
+        subscription_expires_at = expires_at,
         subscription_details = COALESCE(u.subscription_details, '{}'::jsonb)
           || jsonb_build_object(pr.account_type, expires_at::text)
     WHERE id = u.id;

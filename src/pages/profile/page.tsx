@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import { supabase } from '../../lib/supabase';
-import { getSubscriptionExpiry, accountTypeToListingTypes } from '../../lib/subscription';
+import { getSubscriptionExpiry, accountTypeToListingTypes, parseSubscriptionDetails } from '../../lib/subscription';
 
 type Favorite = {
   id: string;
@@ -44,6 +44,9 @@ export default function ProfilePage() {
   const [renewAccountType, setRenewAccountType] = useState('');
   const [renewMonths, setRenewMonths] = useState(1);
   const [renewError, setRenewError] = useState('');
+  const [renewCheckoutId, setRenewCheckoutId] = useState<string | null>(null);
+  const [renewalId, setRenewalId] = useState<string | null>(null);
+  const [renewPaymentMethod, setRenewPaymentMethod] = useState<'mpesa' | 'airtel'>('mpesa');
   const [approvedTypes, setApprovedTypes] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
   const isNewUser = searchParams.get('new') === 'true';
@@ -62,15 +65,15 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(localStorage.getItem('userName') || 'User');
   const [displayPhone, setDisplayPhone] = useState(localStorage.getItem('userPhone') || '');
   const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState<string | null>(null);
-  const [subscriptionDetails, setSubscriptionDetails] = useState<Record<string, string>>({});
+  const [subscriptionDetails, setSubscriptionDetails] = useState<Record<string, unknown>>({});
+  const [primaryAccountType, setPrimaryAccountType] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
   const userName = displayName;
   const userPhone = displayPhone;
-  const accountType = localStorage.getItem('accountType') || '';
   const isServiceProvider = approvedTypes.length > 0
     ? approvedTypes.every(t => SERVICE_TYPES.includes(t))
-    : SERVICE_TYPES.includes(accountType);
-  const hasSubscription = approvedTypes.length > 0 && (subscriptionExpiresAt || Object.keys(subscriptionDetails).length > 0);
+    : SERVICE_TYPES.includes(primaryAccountType);
+  const canRenew = approvedTypes.length > 0 || !!primaryAccountType;
   const isMarketer = userRole === 'marketer';
   const initials = userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
 
@@ -82,6 +85,95 @@ export default function ProfilePage() {
     ...Object.keys(subscriptionDetails),
     ...approvedHistoryTypes,
   ])).filter(t => !approvedTypes.includes(t));
+
+  const getExpiryForType = (type: string) =>
+    getSubscriptionExpiry(subscriptionDetails, type, type === primaryAccountType ? subscriptionExpiresAt : null);
+
+  const refreshSubscriptionData = async (userId: string) => {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('subscription_expires_at, subscription_details, account_type, extra_account_types, has_notification, notification_message')
+      .eq('id', userId)
+      .single();
+
+    if (!userData) return;
+
+    setSubscriptionExpiresAt(userData.subscription_expires_at ?? null);
+    setSubscriptionDetails(parseSubscriptionDetails(userData.subscription_details) ?? {});
+    setPrimaryAccountType(userData.account_type || '');
+    if (userData.has_notification && userData.notification_message) setNotification(userData.notification_message);
+    if (userData.account_type !== undefined) localStorage.setItem('accountType', userData.account_type || '');
+
+    const types = [userData.account_type, ...(userData.extra_account_types || [])].filter(Boolean) as string[];
+    setApprovedTypes(types);
+  };
+
+  useEffect(() => {
+    if (renewStep !== 'waiting' || !renewalId) return;
+
+    let attempts = 0;
+    const maxAttempts = 40;
+
+    const poll = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      attempts += 1;
+
+      const { data: statusData, error: statusError } = await supabase.functions.invoke('check-renewal-payment', {
+        body: { renewal_id: renewalId, user_id: session.user.id },
+      });
+
+      if (!statusError && statusData?.status === 'paid') {
+        await refreshSubscriptionData(session.user.id);
+        setRenewSuccess(true);
+        return true;
+      }
+
+      if (!statusError && statusData?.status === 'failed') {
+        setRenewError(statusData.failure_reason || 'Payment failed or was cancelled.');
+        setRenewStep(renewPaymentMethod);
+        setRenewCheckoutId(null);
+        setRenewalId(null);
+        return true;
+      }
+
+      const { data: renewal } = await supabase
+        .from('renewal_requests')
+        .select('status, failure_reason')
+        .eq('id', renewalId)
+        .maybeSingle();
+
+      if (renewal?.status === 'paid') {
+        await refreshSubscriptionData(session.user.id);
+        setRenewSuccess(true);
+        return true;
+      }
+
+      if (renewal?.status === 'failed') {
+        setRenewError(renewal.failure_reason || 'Payment failed or was cancelled.');
+        setRenewStep(renewPaymentMethod);
+        setRenewCheckoutId(null);
+        setRenewalId(null);
+        return true;
+      }
+
+      if (attempts >= maxAttempts) {
+        setRenewError('Payment is taking longer than expected. If you completed payment, refresh your profile in a minute.');
+      }
+
+      return false;
+    };
+
+    const interval = window.setInterval(async () => {
+      const done = await poll();
+      if (done) window.clearInterval(interval);
+    }, 3000);
+
+    poll();
+
+    return () => window.clearInterval(interval);
+  }, [renewStep, renewalId, renewPaymentMethod]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,12 +213,11 @@ export default function ProfilePage() {
         setAvatarUrl(userData.avatar_url);
         localStorage.setItem('userAvatar', userData.avatar_url);
       }
-      if (userData?.subscription_expires_at) {
-        setSubscriptionExpiresAt(userData.subscription_expires_at);
+      if (userData?.subscription_expires_at !== undefined) {
+        setSubscriptionExpiresAt(userData.subscription_expires_at ?? null);
       }
-      if (userData?.subscription_details) {
-        setSubscriptionDetails(userData.subscription_details as Record<string, string>);
-      }
+      setSubscriptionDetails(parseSubscriptionDetails(userData?.subscription_details) ?? {});
+      setPrimaryAccountType(userData?.account_type || '');
       if (userData?.has_notification && userData?.notification_message) {
         setNotification(userData.notification_message);
         // Clear notification after reading
@@ -211,7 +302,7 @@ export default function ProfilePage() {
     await supabase.from('testimonials').insert({
       user_id: session.user.id,
       name: userName,
-      account_type: accountType,
+      account_type: primaryAccountType || approvedTypes[0] || '',
       subcategory: localStorage.getItem('userSubcategory') || null,
       message: testimonial.trim(),
       avatar_url: avatarUrl || null,
@@ -292,7 +383,7 @@ export default function ProfilePage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setReactivatingType(null); return; }
 
-    const expiry = getSubscriptionExpiry(subscriptionDetails, type, type === accountType ? subscriptionExpiresAt : null);
+    const expiry = getExpiryForType(type);
     if (expiry && new Date(expiry) < new Date()) {
       setReactivatingType(null);
       setRenewAccountType(type);
@@ -332,6 +423,7 @@ export default function ProfilePage() {
       .single();
     const types = [userData?.account_type, ...(userData?.extra_account_types || [])].filter(Boolean) as string[];
     setApprovedTypes(types);
+    setPrimaryAccountType(userData?.account_type || '');
     if (userData?.account_type !== undefined) {
       localStorage.setItem('accountType', userData.account_type || '');
     }
@@ -352,24 +444,42 @@ export default function ProfilePage() {
     setRenewing(true);
     setRenewError('');
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) { setRenewing(false); return; }
+
+    const paymentMethod = renewStep === 'airtel' ? 'airtel' : 'mpesa';
+    setRenewPaymentMethod(paymentMethod);
+
     try {
-      const { error } = await supabase.from('renewal_requests').insert({
-        user_id: session.user.id,
-        user_name: displayName,
-        user_email: session.user.email,
-        phone: renewPhone.trim(),
-        amount: renewAmount,
-        months: renewMonths,
-        account_type: renewAccountType,
-        payment_method: renewStep,
-        status: 'pending',
-      });
+      const { data, error } = await supabase.functions.invoke(
+        paymentMethod === 'mpesa' ? 'mpesa-stk' : 'airtel-stk',
+        {
+          body: {
+            phone: renewPhone.trim(),
+            amount: renewAmount,
+            account_ref: `${session.user.id.slice(0, 8)}-${renewAccountType}`,
+            user_id: session.user.id,
+            months: renewMonths,
+            account_type: renewAccountType,
+            user_name: displayName,
+            user_email: session.user.email,
+          },
+        }
+      );
+
       if (error) {
-        setRenewError('Failed to submit. Please try again.');
+        setRenewError(error.message || 'Could not start payment. Please try again.');
         setRenewing(false);
         return;
       }
+
+      if (!data?.success) {
+        setRenewError(data?.message || 'Payment could not be started. Please try again.');
+        setRenewing(false);
+        return;
+      }
+
+      setRenewCheckoutId(data.checkout_request_id ?? null);
+      setRenewalId(data.renewal_id ?? null);
       setRenewStep('waiting');
     } catch {
       setRenewError('Something went wrong. Please try again.');
@@ -421,10 +531,10 @@ export default function ProfilePage() {
       setListings(listings.filter(l => !removedListingTypes.includes(l.listing_type)));
       setPendingRequests(prev => prev.filter(r => !(r.account_type === deletingAccountType && r.status === 'pending')));
       
-      // Update localStorage if primary account was deleted
-      const currentPrimary = localStorage.getItem('accountType') || '';
-      if (deletingAccountType === currentPrimary) {
+      // Update primary account if it was deleted
+      if (deletingAccountType === primaryAccountType) {
         const newPrimary = newApprovedTypes[0] || '';
+        setPrimaryAccountType(newPrimary);
         localStorage.setItem('accountType', newPrimary);
       }
 
@@ -553,12 +663,12 @@ export default function ProfilePage() {
                       </span>
                     ))}
                   </div>
-                ) : accountType ? (
+                ) : primaryAccountType ? (
                   <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full mt-1 capitalize">
                     <i className="ri-verified-badge-fill text-xs"></i>
-                    {accountType}
+                    {primaryAccountType}
                     <button
-                      onClick={() => handleDeleteAccountType(accountType)}
+                      onClick={() => handleDeleteAccountType(primaryAccountType)}
                       className="text-emerald-500 hover:text-rose-500 cursor-pointer transition-colors ml-0.5"
                     >
                       <i className="ri-close-line text-xs"></i>
@@ -566,11 +676,18 @@ export default function ProfilePage() {
                   </span>
                 ) : null}
                 {/* Per-account subscription expiry */}
-                {approvedTypes.length > 0 && (
+                {(approvedTypes.length > 0 || primaryAccountType) && (
                   <div className="mt-1 space-y-0.5">
-                    {approvedTypes.map(type => {
-                      const expiry = getSubscriptionExpiry(subscriptionDetails, type, type === accountType ? subscriptionExpiresAt : null);
-                      if (!expiry) return null;
+                    {(approvedTypes.length > 0 ? approvedTypes : [primaryAccountType]).map(type => {
+                      const expiry = getExpiryForType(type);
+                      if (!expiry) {
+                        return (
+                          <p key={type} className="text-xs font-medium text-amber-600">
+                            <i className="ri-calendar-line mr-1"></i>
+                            <span className="capitalize font-semibold">{type}</span>: No subscription date — renew to activate
+                          </p>
+                        );
+                      }
                       const expired = new Date(expiry) < new Date();
                       const expiringSoon = !expired && new Date(expiry) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
                       return (
@@ -586,9 +703,9 @@ export default function ProfilePage() {
                   </div>
                 )}
                 <p className="text-xs text-gray-400 mt-1">Tap the camera icon to update your profile photo</p>
-                {hasSubscription && (
+                {canRenew && (
                   <button
-                    onClick={() => { setShowRenew(true); setRenewStep('account'); setRenewPhone(''); setRenewSuccess(false); setRenewError(''); setRenewMonths(1); if (approvedTypes.length === 1) { setRenewAccountType(approvedTypes[0]); } }}
+                    onClick={() => { setShowRenew(true); setRenewStep('account'); setRenewPhone(''); setRenewSuccess(false); setRenewError(''); setRenewMonths(1); setRenewCheckoutId(null); setRenewalId(null); if (approvedTypes.length === 1) { setRenewAccountType(approvedTypes[0]); } }}
                     className="mt-2 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-refresh-line text-xs"></i> Renew Account
@@ -602,7 +719,7 @@ export default function ProfilePage() {
                   { done: !!avatarUrl, label: 'Profile photo' },
                   { done: userName !== 'User' && userName.length > 1, label: 'Full name' },
                   { done: !!userPhone, label: 'Phone number' },
-                  { done: approvedTypes.length > 0 || !!accountType, label: 'Listing account' },
+                  { done: approvedTypes.length > 0 || !!primaryAccountType, label: 'Listing account' },
                 ];
                 const completed = steps.filter(s => s.done).length;
                 const percent = Math.round((completed / steps.length) * 100);
@@ -1067,35 +1184,44 @@ export default function ProfilePage() {
                   <i className="ri-checkbox-circle-fill text-emerald-600 text-2xl"></i>
                 </div>
                 <p className="font-bold text-gray-900">Payment Confirmed!</p>
-                <p className="text-xs text-gray-400 mt-1">Your account has been renewed. It will be activated within a few minutes.</p>
-                <button onClick={() => { setShowRenew(false); setRenewSuccess(false); }} className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer whitespace-nowrap">Done</button>
+                <p className="text-xs text-gray-400 mt-1">Your {renewAccountType} account has been renewed. You can post listings again.</p>
+                <button onClick={() => { setShowRenew(false); setRenewSuccess(false); setRenewCheckoutId(null); setRenewalId(null); }} className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer whitespace-nowrap">Done</button>
               </div>
             )}
 
             {/* WAITING FOR PIN */}
             {!renewSuccess && renewStep === 'waiting' && (
               <div className="text-center py-4 space-y-4">
-                <div className="w-14 h-14 flex items-center justify-center bg-emerald-100 rounded-full mx-auto">
-                  <i className="ri-checkbox-circle-fill text-emerald-600 text-2xl"></i>
+                <div className={`w-14 h-14 flex items-center justify-center rounded-full mx-auto ${
+                  renewPaymentMethod === 'mpesa' ? 'bg-[#00A550]/10' : 'bg-[#E40000]/10'
+                }`}>
+                  <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
                 </div>
-                <p className="font-bold text-gray-900">Request Received!</p>
-                <p className="text-sm text-gray-500">Please send <strong className="text-gray-900">KSh {renewAmount.toLocaleString()}</strong> to complete your renewal.</p>
-                <div className={`rounded-xl p-4 text-left space-y-2 ${ renewStep === 'waiting' ? 'bg-[#00A550]/10 border border-[#00A550]/20' : 'bg-[#E40000]/10 border border-[#E40000]/20'}`}>
-                  <p className="text-xs font-bold text-gray-700">Send KSh {renewAmount.toLocaleString()} via M-Pesa to:</p>
-                  <p className="text-sm font-black text-gray-900">📱 +254 703 542 846</p>
-                  <p className="text-xs text-gray-500">Name: <strong>Nyumbani Hub</strong></p>
-                  <p className="text-xs text-gray-400 mt-2">After paying, send your M-Pesa confirmation message to our WhatsApp:</p>
-                  <a
-                    href={`https://wa.me/254703542846?text=Hi, I have paid KSh ${renewAmount} for ${renewMonths} month(s) renewal of my ${renewAccountType} account. My number is ${renewPhone}.`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba58] text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer w-full mt-2"
-                  >
-                    <i className="ri-whatsapp-fill text-lg"></i>
-                    Send Confirmation on WhatsApp
-                  </a>
+                <p className="font-bold text-gray-900">Check Your Phone</p>
+                <p className="text-sm text-gray-500">
+                  A {renewPaymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} prompt has been sent to{' '}
+                  <strong className="text-gray-900">{renewPhone}</strong>.
+                </p>
+                <div className={`rounded-xl p-4 text-left space-y-2 ${
+                  renewPaymentMethod === 'mpesa' ? 'bg-[#00A550]/10 border border-[#00A550]/20' : 'bg-[#E40000]/10 border border-[#E40000]/20'
+                }`}>
+                  <p className="text-xs font-bold text-gray-700">
+                    Pay <span className={renewPaymentMethod === 'mpesa' ? 'text-[#00A550]' : 'text-[#E40000]'}>
+                      KSh {renewAmount.toLocaleString()}
+                    </span> for {renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType}
+                  </p>
+                  <p className="text-xs text-gray-500">Enter your PIN on your phone to complete payment.</p>
+                  <p className="text-xs text-gray-400">Waiting for confirmation… this usually takes a few seconds.</p>
                 </div>
-                <button onClick={() => { setShowRenew(false); setRenewSuccess(false); }} className="w-full text-sm text-gray-400 border border-gray-200 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">Close</button>
+                {renewError && (
+                  <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">{renewError}</p>
+                )}
+                <button
+                  onClick={() => { setShowRenew(false); setRenewStep('account'); setRenewCheckoutId(null); setRenewalId(null); setRenewError(''); }}
+                  className="w-full text-sm text-gray-400 border border-gray-200 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
               </div>
             )}
 
@@ -1217,7 +1343,7 @@ export default function ProfilePage() {
                   <div className="space-y-3">
                     <p className="text-xs text-gray-400">Total: <strong className="text-gray-900">KSh {renewAmount.toLocaleString()}</strong> for {renewMonths} month{renewMonths > 1 ? 's' : ''}</p>
                     <button
-                      onClick={() => setRenewStep('mpesa')}
+                      onClick={() => { setRenewStep('mpesa'); setRenewPaymentMethod('mpesa'); setRenewError(''); }}
                       className="w-full flex items-center gap-3 bg-[#00A550] hover:bg-[#008f45] text-white font-bold text-sm px-4 py-4 rounded-xl transition-colors cursor-pointer"
                     >
                       <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
@@ -1230,7 +1356,7 @@ export default function ProfilePage() {
                       <i className="ri-arrow-right-s-line text-xl"></i>
                     </button>
                     <button
-                      onClick={() => setRenewStep('airtel')}
+                      onClick={() => { setRenewStep('airtel'); setRenewPaymentMethod('airtel'); setRenewError(''); }}
                       className="w-full flex items-center gap-3 bg-[#E40000] hover:bg-[#cc0000] text-white font-bold text-sm px-4 py-4 rounded-xl transition-colors cursor-pointer"
                     >
                       <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">

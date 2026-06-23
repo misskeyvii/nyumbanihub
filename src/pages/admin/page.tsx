@@ -375,12 +375,17 @@ export default function AdminPage() {
     if (signUpError) { setCreateError(signUpError.message); setCreating(false); return; }
     const userId = data.user?.id;
     if (userId) {
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+      const expiresStr = expiresAt.toISOString();
       const { error: insertError } = await supabaseAdmin.from('users').upsert({
         id: userId, name: form.name, email: form.email,
         phone: form.phone || null, county: form.county || null,
         area: form.area || null, account_type: form.account_type,
         subcategory: form.subcategory || null,
         role: 'user', is_active: true,
+        subscription_expires_at: expiresStr,
+        subscription_details: { [form.account_type]: expiresStr },
       }, { onConflict: 'id' });
       if (insertError) { setCreateError(insertError.message); setCreating(false); return; }
     }
@@ -710,13 +715,24 @@ export default function AdminPage() {
                             if (!newType) return;
                             const allCurrent = [u.account_type, ...(u.extra_account_types || [])].filter(Boolean);
                             if (allCurrent.includes(newType)) { e.target.value = ''; return; }
+                            const expiresAt = new Date();
+                            expiresAt.setMonth(expiresAt.getMonth() + 1);
+                            const expiresStr = expiresAt.toISOString();
+                            const subDetails = { ...(((u as any).subscription_details) || {}), [newType]: expiresStr };
                             if (!u.account_type) {
-                              await supabaseAdmin.from('users').update({ account_type: newType }).eq('id', u.id);
-                              setUsers(users.map(x => x.id === u.id ? { ...x, account_type: newType } : x));
+                              await supabaseAdmin.from('users').update({
+                                account_type: newType,
+                                subscription_expires_at: expiresStr,
+                                subscription_details: subDetails,
+                              }).eq('id', u.id);
+                              setUsers(users.map(x => x.id === u.id ? { ...x, account_type: newType, subscription_expires_at: expiresStr, subscription_details: subDetails } : x));
                             } else {
                               const newExtras = [...(u.extra_account_types || []), newType];
-                              await supabaseAdmin.from('users').update({ extra_account_types: newExtras }).eq('id', u.id);
-                              setUsers(users.map(x => x.id === u.id ? { ...x, extra_account_types: newExtras } : x));
+                              await supabaseAdmin.from('users').update({
+                                extra_account_types: newExtras,
+                                subscription_details: subDetails,
+                              }).eq('id', u.id);
+                              setUsers(users.map(x => x.id === u.id ? { ...x, extra_account_types: newExtras, subscription_details: subDetails } : x));
                             }
                             e.target.value = '';
                           }}

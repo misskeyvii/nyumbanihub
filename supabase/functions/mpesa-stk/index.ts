@@ -1,38 +1,76 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import {
+  corsHeaders,
+  expectedAmount,
+  formatKenyanPhone,
+  insertRenewalRequest,
+  mpesaBaseUrl,
+  verifyUserJwt,
+} from '../_shared/renewal.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { phone, amount, account_ref, user_id, months, account_type } = await req.json();
+    const body = await req.json();
+    const { phone, amount, account_ref, user_id, months, account_type, user_name, user_email } = body;
 
-    const CONSUMER_KEY = Deno.env.get('MPESA_CONSUMER_KEY')!;
-    const CONSUMER_SECRET = Deno.env.get('MPESA_CONSUMER_SECRET')!;
-    const SHORTCODE = Deno.env.get('MPESA_SHORTCODE')!;
-    const PASSKEY = Deno.env.get('MPESA_PASSKEY')!;
-    const CALLBACK_URL = Deno.env.get('MPESA_CALLBACK_URL')!;
+    if (!phone || !amount || !user_id || !months || !account_type) {
+      return new Response(JSON.stringify({ success: false, message: 'Missing required fields' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // Get access token
+    const authorized = await verifyUserJwt(req, user_id);
+    if (!authorized) {
+      return new Response(JSON.stringify({ success: false, message: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const validAmount = expectedAmount(account_type, Number(months));
+    if (Number(amount) !== validAmount) {
+      return new Response(JSON.stringify({ success: false, message: 'Invalid payment amount' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const CONSUMER_KEY = Deno.env.get('MPESA_CONSUMER_KEY');
+    const CONSUMER_SECRET = Deno.env.get('MPESA_CONSUMER_SECRET');
+    const SHORTCODE = Deno.env.get('MPESA_SHORTCODE');
+    const PASSKEY = Deno.env.get('MPESA_PASSKEY');
+    const CALLBACK_URL = Deno.env.get('MPESA_CALLBACK_URL');
+
+    if (!CONSUMER_KEY || !CONSUMER_SECRET || !SHORTCODE || !PASSKEY || !CALLBACK_URL) {
+      return new Response(JSON.stringify({ success: false, message: 'M-Pesa is not configured yet' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const baseUrl = mpesaBaseUrl();
     const auth = btoa(`${CONSUMER_KEY}:${CONSUMER_SECRET}`);
-    const tokenRes = await fetch('https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
+    const tokenRes = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
       headers: { Authorization: `Basic ${auth}` },
     });
-    const { access_token } = await tokenRes.json();
+    const tokenData = await tokenRes.json();
+    const access_token = tokenData.access_token;
 
-    // Generate timestamp & password
+    if (!access_token) {
+      return new Response(JSON.stringify({ success: false, message: 'Failed to authenticate with M-Pesa' }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 14);
     const password = btoa(`${SHORTCODE}${PASSKEY}${timestamp}`);
+    const formattedPhone = formatKenyanPhone(String(phone));
 
-    // Format phone: 254XXXXXXXXX
-    const formattedPhone = phone.replace(/^0/, '254').replace(/^\+/, '');
-
-    // STK Push
-    const stkRes = await fetch('https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
+    const stkRes = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${access_token}`,
@@ -42,49 +80,49 @@ serve(async (req) => {
         BusinessShortCode: SHORTCODE,
         Password: password,
         Timestamp: timestamp,
-        TransactionType: 'CustomerBuyGoodsOnline',
-        Amount: amount,
+        TransactionType: Deno.env.get('MPESA_TRANSACTION_TYPE') || 'CustomerPayBillOnline',
+        Amount: validAmount,
         PartyA: formattedPhone,
         PartyB: SHORTCODE,
         PhoneNumber: formattedPhone,
         CallBackURL: CALLBACK_URL,
-        AccountReference: account_ref,
-        TransactionDesc: `Nyumbani Hub ${account_type} renewal - ${months} month(s)`,
+        AccountReference: account_ref || `${user_id.slice(0, 8)}-${account_type}`,
+        TransactionDesc: `NyumbaniHub ${account_type} renewal ${months}mo`,
       }),
     });
 
     const stkData = await stkRes.json();
 
-    // Save pending payment to Supabase
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    if (stkData.ResponseCode !== '0') {
+      return new Response(JSON.stringify({
+        success: false,
+        message: stkData.errorMessage || stkData.ResponseDescription || 'M-Pesa STK push failed',
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    await fetch(`${SUPABASE_URL}/rest/v1/renewal_requests`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_SERVICE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({
-        user_id,
-        phone: formattedPhone,
-        amount,
-        months,
-        account_type,
-        payment_method: 'mpesa',
-        checkout_request_id: stkData.CheckoutRequestID,
-        status: 'pending',
-      }),
+    const renewal = await insertRenewalRequest({
+      user_id,
+      user_name: user_name ?? null,
+      user_email: user_email ?? null,
+      phone: formattedPhone,
+      amount: validAmount,
+      months: Number(months),
+      account_type,
+      payment_method: 'mpesa',
+      checkout_request_id: stkData.CheckoutRequestID,
+      merchant_request_id: stkData.MerchantRequestID,
+      status: 'pending',
     });
 
     return new Response(JSON.stringify({
-      success: stkData.ResponseCode === '0',
-      message: stkData.CustomerMessage || stkData.ResponseDescription,
+      success: true,
+      message: stkData.CustomerMessage || 'Check your phone and enter your M-Pesa PIN',
       checkout_request_id: stkData.CheckoutRequestID,
+      renewal_id: renewal.id,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-
   } catch (err) {
     return new Response(JSON.stringify({ success: false, message: String(err) }), {
       status: 500,
