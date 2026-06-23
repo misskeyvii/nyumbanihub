@@ -44,7 +44,6 @@ export default function ProfilePage() {
   const [renewAccountType, setRenewAccountType] = useState('');
   const [renewMonths, setRenewMonths] = useState(1);
   const [renewError, setRenewError] = useState('');
-  const [renewCheckoutId, setRenewCheckoutId] = useState<string | null>(null);
   const [renewalId, setRenewalId] = useState<string | null>(null);
   const [renewPaymentMethod, setRenewPaymentMethod] = useState<'mpesa' | 'airtel'>('mpesa');
   const [approvedTypes, setApprovedTypes] = useState<string[]>([]);
@@ -133,7 +132,6 @@ export default function ProfilePage() {
       if (!statusError && statusData?.status === 'failed') {
         setRenewError(statusData.failure_reason || 'Payment failed or was cancelled.');
         setRenewStep(renewPaymentMethod);
-        setRenewCheckoutId(null);
         setRenewalId(null);
         return true;
       }
@@ -153,7 +151,6 @@ export default function ProfilePage() {
       if (renewal?.status === 'failed') {
         setRenewError(renewal.failure_reason || 'Payment failed or was cancelled.');
         setRenewStep(renewPaymentMethod);
-        setRenewCheckoutId(null);
         setRenewalId(null);
         return true;
       }
@@ -478,7 +475,6 @@ export default function ProfilePage() {
         return;
       }
 
-      setRenewCheckoutId(data.checkout_request_id ?? null);
       setRenewalId(data.renewal_id ?? null);
       setRenewStep('waiting');
     } catch {
@@ -705,7 +701,7 @@ export default function ProfilePage() {
                 <p className="text-xs text-gray-400 mt-1">Tap the camera icon to update your profile photo</p>
                 {canRenew && (
                   <button
-                    onClick={() => { setShowRenew(true); setRenewStep('account'); setRenewPhone(''); setRenewSuccess(false); setRenewError(''); setRenewMonths(1); setRenewCheckoutId(null); setRenewalId(null); if (approvedTypes.length === 1) { setRenewAccountType(approvedTypes[0]); } }}
+                    onClick={() => { setShowRenew(true); setRenewStep('account'); setRenewPhone(''); setRenewSuccess(false); setRenewError(''); setRenewMonths(1); setRenewalId(null); if (approvedTypes.length === 1) { setRenewAccountType(approvedTypes[0]); } }}
                     className="mt-2 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                   >
                     <i className="ri-refresh-line text-xs"></i> Renew Account
@@ -1185,7 +1181,7 @@ export default function ProfilePage() {
                 </div>
                 <p className="font-bold text-gray-900">Payment Confirmed!</p>
                 <p className="text-xs text-gray-400 mt-1">Your {renewAccountType} account has been renewed. You can post listings again.</p>
-                <button onClick={() => { setShowRenew(false); setRenewSuccess(false); setRenewCheckoutId(null); setRenewalId(null); }} className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer whitespace-nowrap">Done</button>
+                <button onClick={() => { setShowRenew(false); setRenewSuccess(false); setRenewalId(null); }} className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer whitespace-nowrap">Done</button>
               </div>
             )}
 
@@ -1217,7 +1213,7 @@ export default function ProfilePage() {
                   <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">{renewError}</p>
                 )}
                 <button
-                  onClick={() => { setShowRenew(false); setRenewStep('account'); setRenewCheckoutId(null); setRenewalId(null); setRenewError(''); }}
+                  onClick={() => { setShowRenew(false); setRenewStep('account'); setRenewalId(null); setRenewError(''); }}
                   className="w-full text-sm text-gray-400 border border-gray-200 py-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Close
