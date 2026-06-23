@@ -54,6 +54,7 @@ export default function ProfilePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingAccountType, setDeletingAccountType] = useState<string | null>(null);
   const [isDeletingAccountType, setIsDeletingAccountType] = useState(false);
+  const [reactivatingType, setReactivatingType] = useState<string | null>(null);
   const navigate = useNavigate();
   const userRole = localStorage.getItem('userRole') || '';
   const isNormalUser = userRole === 'user';
@@ -72,6 +73,15 @@ export default function ProfilePage() {
   const hasSubscription = approvedTypes.length > 0 && (subscriptionExpiresAt || Object.keys(subscriptionDetails).length > 0);
   const isMarketer = userRole === 'marketer';
   const initials = userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const pendingOnly = pendingRequests.filter(r => r.status === 'pending');
+  const approvedHistoryTypes = Array.from(new Set(
+    pendingRequests.filter(r => r.status === 'approved').map(r => r.account_type)
+  ));
+  const reactivatableTypes = Array.from(new Set([
+    ...Object.keys(subscriptionDetails),
+    ...approvedHistoryTypes,
+  ])).filter(t => !approvedTypes.includes(t));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -264,8 +274,69 @@ export default function ProfilePage() {
       status: 'pending',
     });
     if (error) { setRequestError(error.message); setSubmittingRequest(false); return; }
+    setPendingRequests(prev => [{
+      id: crypto.randomUUID(),
+      account_type: requestForm.account_type,
+      subcategory: requestForm.subcategory || undefined,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    }, ...prev]);
+    setRequestForm({ business_name: '', account_type: '', phone: '', county: '', message: '', subcategory: '' });
     setRequestSuccess(true);
     setSubmittingRequest(false);
+  };
+
+  const handleReactivate = async (type: string) => {
+    setReactivatingType(type);
+    setRequestError('');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setReactivatingType(null); return; }
+
+    const expiry = getSubscriptionExpiry(subscriptionDetails, type, type === accountType ? subscriptionExpiresAt : null);
+    if (expiry && new Date(expiry) < new Date()) {
+      setReactivatingType(null);
+      setRenewAccountType(type);
+      setShowRenew(true);
+      setRenewStep('account');
+      setRequestError('Subscription expired for this account. Please renew to reactivate.');
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('reactivate_account_type', {
+      p_user_id: session.user.id,
+      p_account_type: type,
+    });
+
+    if (error) {
+      setRequestError(error.message);
+      setReactivatingType(null);
+      return;
+    }
+
+    if (data?.[0]?.success === false) {
+      const msg = data[0].message as string;
+      if (msg.includes('expired') || msg.includes('renew')) {
+        setRenewAccountType(type);
+        setShowRenew(true);
+        setRenewStep('account');
+      }
+      setRequestError(msg);
+      setReactivatingType(null);
+      return;
+    }
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('account_type, extra_account_types')
+      .eq('id', session.user.id)
+      .single();
+    const types = [userData?.account_type, ...(userData?.extra_account_types || [])].filter(Boolean) as string[];
+    setApprovedTypes(types);
+    if (userData?.account_type !== undefined) {
+      localStorage.setItem('accountType', userData.account_type || '');
+    }
+    setReactivatingType(null);
+    setRequestError('');
   };
 
   const PRICING: Record<string, number> = {
@@ -348,13 +419,7 @@ export default function ProfilePage() {
       setApprovedTypes(newApprovedTypes);
       const removedListingTypes = accountTypeToListingTypes[deletingAccountType] ?? [deletingAccountType];
       setListings(listings.filter(l => !removedListingTypes.includes(l.listing_type)));
-      setSubscriptionDetails(prev => {
-        if (!prev) return prev;
-        const next = { ...prev };
-        delete next[deletingAccountType];
-        return next;
-      });
-      setPendingRequests(prev => prev.filter(r => r.account_type !== deletingAccountType));
+      setPendingRequests(prev => prev.filter(r => !(r.account_type === deletingAccountType && r.status === 'pending')));
       
       // Update localStorage if primary account was deleted
       const currentPrimary = localStorage.getItem('accountType') || '';
@@ -718,29 +783,58 @@ export default function ProfilePage() {
             <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
               <div>
                 <h2 className="font-bold text-gray-900">Request a Listing Account</h2>
-                <p className="text-xs text-gray-400 mt-1">Submit your details to request a listing account.</p>
+                <p className="text-xs text-gray-400 mt-1">Request a new category, or reactivate one you removed earlier.</p>
               </div>
               {requestSuccess ? (
                 <div className="text-center py-8">
                   <i className="ri-checkbox-circle-line text-emerald-500 text-4xl mb-3"></i>
                   <p className="font-semibold text-gray-900">Request Submitted!</p>
                   <p className="text-xs text-gray-400 mt-1">Your request has been received. You'll be notified once it's processed.</p>
+                  <button
+                    onClick={() => setRequestSuccess(false)}
+                    className="mt-4 text-xs text-emerald-600 font-semibold hover:underline cursor-pointer"
+                  >
+                    Submit another request
+                  </button>
                 </div>
               ) : (
                 <>
                   {requestError && <p className="text-xs text-rose-500 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{requestError}</p>}
-                  {pendingRequests.length > 0 && (
-                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-2">
-                      <p className="text-xs font-semibold text-gray-500 mb-2">Pending requests</p>
-                      {pendingRequests.map(p => (
-                        <div key={p.id} className="flex items-center justify-between text-xs text-gray-600 py-1">
+
+                  {reactivatableTypes.length > 0 && (
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                      <p className="text-xs font-semibold text-emerald-800 mb-2">Reactivate a previous account</p>
+                      <p className="text-[11px] text-emerald-700 mb-3">These were approved before. Reactivate instantly — no admin approval needed.</p>
+                      <div className="flex flex-wrap gap-2">
+                        {reactivatableTypes.map(type => (
+                          <button
+                            key={type}
+                            onClick={() => handleReactivate(type)}
+                            disabled={reactivatingType === type}
+                            className="inline-flex items-center gap-1.5 bg-white border border-emerald-200 text-emerald-700 text-xs font-semibold px-3 py-1.5 rounded-full capitalize hover:bg-emerald-100 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <i className="ri-refresh-line text-xs"></i>
+                            {reactivatingType === type ? 'Reactivating...' : type}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {pendingOnly.length > 0 && (
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                      <p className="text-xs font-semibold text-amber-800 mb-2">Waiting for admin approval</p>
+                      {pendingOnly.map(p => (
+                        <div key={p.id} className="flex items-center justify-between text-xs text-amber-900 py-1">
                           <div className="capitalize">{p.account_type}{p.subcategory ? ` — ${p.subcategory}` : ''}</div>
-                          <div className="text-gray-400">{p.status} · {new Date(p.created_at).toLocaleDateString('en-KE')}</div>
+                          <div className="text-amber-600">{new Date(p.created_at).toLocaleDateString('en-KE')}</div>
                         </div>
                       ))}
                     </div>
                   )}
+
                   <div className="space-y-3">
+                    <p className="text-xs font-semibold text-gray-500">Request a new account type</p>
                     <div>
                       <label className="text-xs font-semibold text-gray-500 block mb-1.5">Business / Listing Name *</label>
                       <input value={requestForm.business_name} onChange={e => setRequestForm({ ...requestForm, business_name: e.target.value })} placeholder="e.g. Sunrise Apartments" className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400" />
@@ -749,7 +843,7 @@ export default function ProfilePage() {
                       <label className="text-xs font-semibold text-gray-500 block mb-1.5">Account Type *</label>
                       <select value={requestForm.account_type} onChange={e => setRequestForm({ ...requestForm, account_type: e.target.value, subcategory: '' })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
                         <option value="">Select type</option>
-                        {REQUEST_ACCOUNT_TYPES.filter(t => !approvedTypes.includes(t)).map(t => <option key={t} value={t}>{t}</option>)}
+                        {REQUEST_ACCOUNT_TYPES.filter(t => !approvedTypes.includes(t) && !reactivatableTypes.includes(t)).map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
                     {requestForm.account_type === 'service' && (

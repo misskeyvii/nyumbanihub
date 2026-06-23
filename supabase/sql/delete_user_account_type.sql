@@ -1,5 +1,5 @@
 -- RPC: Delete user account type and associated listings
--- Safely removes an account type from a user and deletes all listings of that type
+-- Removes from active account types but keeps subscription_details for reactivation
 CREATE OR REPLACE FUNCTION delete_user_account_type(
   p_user_id UUID,
   p_account_type TEXT
@@ -33,7 +33,6 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Map account type to listing_type values used in the listings table
   v_listing_types := CASE p_account_type
     WHEN 'landlord' THEN ARRAY['home', 'apartment']
     WHEN 'airbnb' THEN ARRAY['airbnb']
@@ -48,9 +47,9 @@ BEGIN
   WHERE user_id = p_user_id AND listing_type = ANY(v_listing_types);
   GET DIAGNOSTICS v_listing_count = ROW_COUNT;
 
-  -- Remove all requests for this account type (pending or approved)
+  -- Remove only open/pending requests — keep approved history for reactivation
   DELETE FROM pending_requests
-  WHERE user_id = p_user_id AND account_type = p_account_type;
+  WHERE user_id = p_user_id AND account_type = p_account_type AND status = 'pending';
   GET DIAGNOSTICS v_request_count = ROW_COUNT;
 
   IF p_account_type = v_primary_account THEN
@@ -65,13 +64,11 @@ BEGIN
 
     UPDATE users
     SET account_type = v_new_primary,
-        extra_account_types = v_new_extras,
-        subscription_details = coalesce(subscription_details, '{}'::jsonb) - p_account_type
+        extra_account_types = v_new_extras
     WHERE id = p_user_id;
   ELSE
     UPDATE users
-    SET extra_account_types = array_remove(coalesce(v_extra_accounts, '{}'), p_account_type),
-        subscription_details = coalesce(subscription_details, '{}'::jsonb) - p_account_type
+    SET extra_account_types = array_remove(coalesce(v_extra_accounts, '{}'), p_account_type)
     WHERE id = p_user_id;
   END IF;
 

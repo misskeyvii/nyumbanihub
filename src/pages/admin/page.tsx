@@ -169,6 +169,13 @@ export default function AdminPage() {
 
   const handleApproveRequest = async (req: PendingRequest) => {
     setApprovingId(req.id);
+
+    if (req.status !== 'pending') {
+      alert('This request was already processed.');
+      setApprovingId(null);
+      return;
+    }
+
     const { data: userData, error: userDataError } = await supabaseAdmin
       .from('users')
       .select('account_type, extra_account_types, subscription_details')
@@ -188,54 +195,31 @@ export default function AdminPage() {
 
     const currentDetails = (userData.subscription_details as Record<string, string>) || {};
     const newDetails = { ...currentDetails, [req.account_type]: expiresStr };
-    // Try to run atomic RPC to approve the request (updates users, pending_requests, subscription_details)
-    try {
-      const { error: rpcError } = await supabaseAdmin.rpc('approve_request', { pr_uuid: req.id });
-      if (!rpcError) {
-        await supabaseAdmin.from('users').update({
-          ...(req.phone && { phone: req.phone }),
-          ...(req.county && { county: req.county }),
-          ...(req.subcategory && { subcategory: req.subcategory }),
-          subscription_expires_at: expiresStr,
-          subscription_details: newDetails,
-          has_notification: true,
-          notification_message: notificationMessage,
-        }).eq('id', req.user_id);
-        await fetchUsers();
-        setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
-        setApprovingId(null);
-        return;
-      }
-      // If RPC failed, fall back to manual updates below
-      console.warn('approve_request RPC failed, falling back to manual update:', rpcError.message);
-    } catch (e) {
-      console.warn('approve_request RPC error, falling back to manual update', e);
-    }
-
-    // Fallback manual update (keeps previous behavior)
-    let updateData: any = {
-      ...(req.phone && { phone: req.phone }),
-      ...(req.county && { county: req.county }),
-      ...(req.subcategory && { subcategory: req.subcategory }),
-      subscription_expires_at: expiresStr,
-      subscription_details: newDetails,
-      has_notification: true,
-      notification_message: notificationMessage,
-    };
 
     const hasPrimary = !!userData.account_type && userData.account_type.trim() !== '';
+    const existingExtras = (userData.extra_account_types || []).filter(Boolean);
+    let nextAccountType = userData.account_type;
+    let nextExtras = existingExtras;
+
     if (!hasPrimary) {
-      updateData.account_type = req.account_type;
-    } else if (userData.account_type !== req.account_type) {
-      const existing = (userData.extra_account_types || []).filter(Boolean);
-      if (!existing.includes(req.account_type)) {
-        updateData.extra_account_types = [...existing, req.account_type];
-      }
+      nextAccountType = req.account_type;
+    } else if (userData.account_type !== req.account_type && !existingExtras.includes(req.account_type)) {
+      nextExtras = [...existingExtras, req.account_type];
     }
 
     const { error: userUpdateError } = await supabaseAdmin
       .from('users')
-      .update(updateData)
+      .update({
+        account_type: nextAccountType,
+        extra_account_types: nextExtras,
+        ...(req.phone && { phone: req.phone }),
+        ...(req.county && { county: req.county }),
+        ...(req.subcategory && { subcategory: req.subcategory }),
+        subscription_expires_at: expiresStr,
+        subscription_details: newDetails,
+        has_notification: true,
+        notification_message: notificationMessage,
+      })
       .eq('id', req.user_id);
 
     if (userUpdateError) {
@@ -247,7 +231,8 @@ export default function AdminPage() {
     const { error: requestUpdateError } = await supabaseAdmin
       .from('pending_requests')
       .update({ status: 'approved' })
-      .eq('id', req.id);
+      .eq('id', req.id)
+      .eq('status', 'pending');
 
     if (requestUpdateError) {
       alert('Error updating approval status: ' + requestUpdateError.message);
