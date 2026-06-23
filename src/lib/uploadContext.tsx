@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { compressImage } from './compressImage';
+import { canPostListingType, parseSubscriptionDetails } from './subscription';
 
 interface UploadJob {
   id: string;
@@ -41,6 +42,26 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setJobs(prev => [...prev, { id, title, progress: 0, status: 'uploading' }]);
 
     try {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('account_type, extra_account_types, subscription_expires_at, subscription_details')
+        .eq('id', userId)
+        .single();
+
+      if (userError || !userData) throw new Error('Could not verify listing permissions.');
+
+      const details = parseSubscriptionDetails(userData.subscription_details);
+      const extraTypes = Array.isArray(userData.extra_account_types) ? userData.extra_account_types : [];
+      const allowed = canPostListingType(
+        selectedType,
+        userData.account_type ?? '',
+        extraTypes,
+        details,
+        userData.subscription_expires_at ?? null
+      );
+
+      if (!allowed) throw new Error('You no longer have permission to post this listing type.');
+
       const imageUrls: string[] = [];
       const total = images.length;
 

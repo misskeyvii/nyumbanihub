@@ -5,6 +5,7 @@ import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import { kenyaCounties } from '../../mocks/listings';
 import { supabase } from '../../lib/supabase';
 import { useUpload } from '../../lib/uploadContext';
+import { getActiveAccountTypes, getOwnedAccountTypes, parseSubscriptionDetails } from '../../lib/subscription';
 
 const accountTypeMap: Record<string, string[]> = {
   landlord: ['home', 'apartment'],
@@ -31,7 +32,7 @@ export default function PostListingPage() {
   const [accountType, setAccountType] = useState(localStorage.getItem('accountType') ?? '');
   const [extraAccountTypes, setExtraAccountTypes] = useState<string[]>([]);
   const [subscriptionDetails, setSubscriptionDetails] = useState<Record<string, { expires_at?: string }> | null>(null);
-  const [approvedRequestTypes, setApprovedRequestTypes] = useState<string[]>([]);
+  const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState<string | null>(null);
   const [userRole, setUserRole] = useState(localStorage.getItem('userRole') ?? '');
   const [userPhone, setUserPhone] = useState(localStorage.getItem('userPhone') ?? '');
   const [userCounty, setUserCounty] = useState(localStorage.getItem('userCounty') ?? '');
@@ -41,42 +42,24 @@ export default function PostListingPage() {
   const { startBackgroundUpload } = useUpload();
 
   useEffect(() => {
-    const parseDetails = (value: any) => {
-      if (!value) return null;
-      if (typeof value === 'object') return value;
-      try {
-        return JSON.parse(value);
-      } catch {
-        return null;
-      }
-    };
-
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { setAuthChecked(true); return; }
-      const [{ data }, { data: approvedRequests }] = await Promise.all([
-        supabase
+      const { data } = await supabase
           .from('users')
           .select('account_type, extra_account_types, role, phone, county, name, subscription_expires_at, subscription_details')
           .eq('id', session.user.id)
-          .single(),
-        supabase
-          .from('pending_requests')
-          .select('account_type')
-          .eq('user_id', session.user.id)
-          .in('status', ['approved'])
-      ]);
+          .single();
 
       if (data) {
         const at = data.account_type ?? '';
         const extraTypes = Array.isArray(data.extra_account_types) ? data.extra_account_types : [];
         const role = data.role ?? '';
-        const details = parseDetails(data.subscription_details);
-        const approvedTypes = Array.isArray(approvedRequests) ? approvedRequests.map((r: any) => r.account_type).filter(Boolean) : [];
+        const details = parseSubscriptionDetails(data.subscription_details);
 
         setAccountType(at);
         setExtraAccountTypes(extraTypes);
         setSubscriptionDetails(details as Record<string, { expires_at?: string }> | null);
-        setApprovedRequestTypes(approvedTypes);
+        setSubscriptionExpiresAt(data.subscription_expires_at ?? null);
         setUserRole(role);
         setUserPhone(data.phone ?? '');
         setUserCounty(data.county ?? '');
@@ -86,29 +69,28 @@ export default function PostListingPage() {
         localStorage.setItem('userCounty', data.county ?? '');
         localStorage.setItem('userName', data.name ?? '');
 
-        const expiryDates = [
-          ...Object.values(details || {}).map((d: any) => d?.expires_at).filter(Boolean),
-          data.subscription_expires_at || '',
-        ].filter(Boolean) as string[];
-        const allExpired = expiryDates.length > 0 && expiryDates.every(date => new Date(date) < new Date());
-        setIsExpired(allExpired);
+        const ownedTypes = getOwnedAccountTypes(at, extraTypes);
+        const activeTypes = getActiveAccountTypes(at, extraTypes, details, data.subscription_expires_at);
+        setIsExpired(ownedTypes.length > 0 && activeTypes.length === 0);
       }
       setAuthChecked(true);
     });
   }, []);
 
-  // Combine all allowed listing types — computed from state (always fresh from DB)
-  const allAccountTypes = Array.from(new Set([
+  const ownedAccountTypes = getOwnedAccountTypes(accountType, extraAccountTypes);
+  const activeAccountTypes = getActiveAccountTypes(
     accountType,
-    ...extraAccountTypes,
-    ...Object.keys(subscriptionDetails || {}),
-    ...approvedRequestTypes,
-  ].filter(Boolean)));
+    extraAccountTypes,
+    subscriptionDetails,
+    subscriptionExpiresAt
+  );
   const allowedTypes = !authChecked
     ? null // still loading — don't restrict yet
-    : allAccountTypes.length > 0
-      ? allAccountTypes.flatMap(at => accountTypeMap[at] ?? [])
-      : null;
+    : activeAccountTypes.length > 0
+      ? activeAccountTypes.flatMap(at => accountTypeMap[at] ?? [])
+      : ownedAccountTypes.length > 0
+        ? []
+        : null;
 
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedType, setSelectedType] = useState('');
@@ -152,8 +134,8 @@ export default function PostListingPage() {
     );
   }
 
-  // Only block if ALL account types are service/entertainment AND DB data is confirmed
-  const isServiceOnlyUser = authChecked && allAccountTypes.length > 0 && allAccountTypes.every(t => ['service', 'entertainment'].includes(t));
+  // Only block if ALL owned account types are service/entertainment AND DB data is confirmed
+  const isServiceOnlyUser = authChecked && ownedAccountTypes.length > 0 && ownedAccountTypes.every(t => ['service', 'entertainment'].includes(t));
 
   if (isServiceOnlyUser || userRole === 'marketer') {
     const isMarketer = userRole === 'marketer';

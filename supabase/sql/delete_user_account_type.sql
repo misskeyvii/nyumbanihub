@@ -1,6 +1,5 @@
 -- RPC: Delete user account type and associated listings
 -- Safely removes an account type from a user and deletes all listings of that type
--- Only admins/superadmins can call this (verification happens in app)
 CREATE OR REPLACE FUNCTION delete_user_account_type(
   p_user_id UUID,
   p_account_type TEXT
@@ -18,8 +17,8 @@ DECLARE
   v_request_count INTEGER := 0;
   v_new_primary TEXT;
   v_new_extras TEXT[];
+  v_listing_types TEXT[];
 BEGIN
-  -- Get current account types
   SELECT account_type, extra_account_types
   INTO v_primary_account, v_extra_accounts
   FROM users WHERE id = p_user_id;
@@ -29,26 +28,33 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Check if account type exists
-  IF p_account_type != v_primary_account AND NOT (v_extra_accounts @> ARRAY[p_account_type]) THEN
+  IF p_account_type != v_primary_account AND NOT (coalesce(v_extra_accounts, '{}') @> ARRAY[p_account_type]) THEN
     RETURN QUERY SELECT false, 'Account type not found', 0, 0;
     RETURN;
   END IF;
 
-  -- Delete listings for this account type
-  DELETE FROM listings 
-  WHERE user_id = p_user_id AND listing_type = p_account_type;
+  -- Map account type to listing_type values used in the listings table
+  v_listing_types := CASE p_account_type
+    WHEN 'landlord' THEN ARRAY['home', 'apartment']
+    WHEN 'airbnb' THEN ARRAY['airbnb']
+    WHEN 'hotel' THEN ARRAY['hotel']
+    WHEN 'shop' THEN ARRAY['shop']
+    WHEN 'service' THEN ARRAY['service']
+    WHEN 'marketplace' THEN ARRAY['marketplace']
+    ELSE ARRAY[p_account_type]
+  END;
+
+  DELETE FROM listings
+  WHERE user_id = p_user_id AND listing_type = ANY(v_listing_types);
   GET DIAGNOSTICS v_listing_count = ROW_COUNT;
 
-  -- Delete pending requests for this account type (cleanup)
+  -- Remove all requests for this account type (pending or approved)
   DELETE FROM pending_requests
-  WHERE user_id = p_user_id AND account_type = p_account_type AND status = 'pending';
+  WHERE user_id = p_user_id AND account_type = p_account_type;
   GET DIAGNOSTICS v_request_count = ROW_COUNT;
 
-  -- Remove account type from user
   IF p_account_type = v_primary_account THEN
-    -- Remove primary account — promote first extra or set null
-    v_new_extras := array_remove(v_extra_accounts, p_account_type);
+    v_new_extras := array_remove(coalesce(v_extra_accounts, '{}'), p_account_type);
     IF array_length(v_new_extras, 1) > 0 THEN
       v_new_primary := v_new_extras[1];
       v_new_extras := v_new_extras[2:];
@@ -56,15 +62,16 @@ BEGIN
       v_new_primary := NULL;
       v_new_extras := ARRAY[]::TEXT[];
     END IF;
-    
-    UPDATE users 
-    SET account_type = v_new_primary, 
-        extra_account_types = v_new_extras
+
+    UPDATE users
+    SET account_type = v_new_primary,
+        extra_account_types = v_new_extras,
+        subscription_details = coalesce(subscription_details, '{}'::jsonb) - p_account_type
     WHERE id = p_user_id;
   ELSE
-    -- Remove from extras
-    UPDATE users 
-    SET extra_account_types = array_remove(v_extra_accounts, p_account_type)
+    UPDATE users
+    SET extra_account_types = array_remove(coalesce(v_extra_accounts, '{}'), p_account_type),
+        subscription_details = coalesce(subscription_details, '{}'::jsonb) - p_account_type
     WHERE id = p_user_id;
   END IF;
 
@@ -72,5 +79,4 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant permission to authenticated users (they verify admin role in app)
 GRANT EXECUTE ON FUNCTION delete_user_account_type(UUID, TEXT) TO authenticated;

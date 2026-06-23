@@ -192,6 +192,15 @@ export default function AdminPage() {
     try {
       const { error: rpcError } = await supabaseAdmin.rpc('approve_request', { pr_uuid: req.id });
       if (!rpcError) {
+        await supabaseAdmin.from('users').update({
+          ...(req.phone && { phone: req.phone }),
+          ...(req.county && { county: req.county }),
+          ...(req.subcategory && { subcategory: req.subcategory }),
+          subscription_expires_at: expiresStr,
+          subscription_details: newDetails,
+          has_notification: true,
+          notification_message: notificationMessage,
+        }).eq('id', req.user_id);
         await fetchUsers();
         setRequests(requests.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
         setApprovingId(null);

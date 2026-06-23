@@ -33,7 +33,7 @@ BEGIN
   END IF;
 
   -- optional expires_at column on pending_requests (nullable)
-  expires_at := pr.expires_at;
+  expires_at := COALESCE(pr.expires_at, NOW() + INTERVAL '1 month');
 
   -- If user has no primary account_type, set it. Otherwise add to extra_account_types
   IF u.account_type IS NULL OR u.account_type = '' THEN

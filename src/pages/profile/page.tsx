@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import { supabase } from '../../lib/supabase';
+import { getSubscriptionExpiry, accountTypeToListingTypes } from '../../lib/subscription';
 
 type Favorite = {
   id: string;
@@ -50,6 +51,9 @@ export default function ProfilePage() {
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingAccountType, setDeletingAccountType] = useState<string | null>(null);
+  const [isDeletingAccountType, setIsDeletingAccountType] = useState(false);
   const navigate = useNavigate();
   const userRole = localStorage.getItem('userRole') || '';
   const isNormalUser = userRole === 'user';
@@ -316,7 +320,13 @@ export default function ProfilePage() {
   };
 
   const handleDeleteAccountType = async (typeToDelete: string) => {
-    if (!confirm(`Remove "${typeToDelete}" account? All listings posted under this account type will be deleted.`)) return;
+    setDeletingAccountType(typeToDelete);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteAccountType = async () => {
+    if (!deletingAccountType) return;
+    setIsDeletingAccountType(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -324,7 +334,7 @@ export default function ProfilePage() {
       // Use RPC to safely delete account type and listings
       const { data, error } = await supabase.rpc('delete_user_account_type', { 
         p_user_id: session.user.id, 
-        p_account_type: typeToDelete 
+        p_account_type: deletingAccountType 
       });
 
       if (error) throw error;
@@ -334,20 +344,32 @@ export default function ProfilePage() {
 
       // Update UI
       const deletedCount = data?.[0]?.deleted_listing_count || 0;
-      const newApprovedTypes = approvedTypes.filter(t => t !== typeToDelete);
+      const newApprovedTypes = approvedTypes.filter(t => t !== deletingAccountType);
       setApprovedTypes(newApprovedTypes);
-      setListings(listings.filter(l => l.listing_type !== typeToDelete));
+      const removedListingTypes = accountTypeToListingTypes[deletingAccountType] ?? [deletingAccountType];
+      setListings(listings.filter(l => !removedListingTypes.includes(l.listing_type)));
+      setSubscriptionDetails(prev => {
+        if (!prev) return prev;
+        const next = { ...prev };
+        delete next[deletingAccountType];
+        return next;
+      });
+      setPendingRequests(prev => prev.filter(r => r.account_type !== deletingAccountType));
       
       // Update localStorage if primary account was deleted
       const currentPrimary = localStorage.getItem('accountType') || '';
-      if (typeToDelete === currentPrimary) {
+      if (deletingAccountType === currentPrimary) {
         const newPrimary = newApprovedTypes[0] || '';
         localStorage.setItem('accountType', newPrimary);
       }
 
-      alert(`Removed "${typeToDelete}" account. Deleted ${deletedCount} listing(s).`);
+      setShowDeleteConfirm(false);
+      setDeletingAccountType(null);
+      alert(`Removed "${deletingAccountType}" account. Deleted ${deletedCount} listing(s).`);
     } catch (err) {
       alert(`Failed to remove account type: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsDeletingAccountType(false);
     }
   };
 
@@ -460,7 +482,6 @@ export default function ProfilePage() {
                         <button
                           onClick={() => handleDeleteAccountType(type)}
                           className="text-emerald-500 hover:text-rose-500 cursor-pointer transition-colors ml-0.5"
-                          title={`Remove ${type} account`}
                         >
                           <i className="ri-close-line text-xs"></i>
                         </button>
@@ -474,7 +495,6 @@ export default function ProfilePage() {
                     <button
                       onClick={() => handleDeleteAccountType(accountType)}
                       className="text-emerald-500 hover:text-rose-500 cursor-pointer transition-colors ml-0.5"
-                      title={`Remove ${accountType} account`}
                     >
                       <i className="ri-close-line text-xs"></i>
                     </button>
@@ -484,7 +504,7 @@ export default function ProfilePage() {
                 {approvedTypes.length > 0 && (
                   <div className="mt-1 space-y-0.5">
                     {approvedTypes.map(type => {
-                      const expiry = subscriptionDetails[type] || subscriptionExpiresAt;
+                      const expiry = getSubscriptionExpiry(subscriptionDetails, type, type === accountType ? subscriptionExpiresAt : null);
                       if (!expiry) return null;
                       const expired = new Date(expiry) < new Date();
                       const expiringSoon = !expired && new Date(expiry) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -517,7 +537,7 @@ export default function ProfilePage() {
                   { done: !!avatarUrl, label: 'Profile photo' },
                   { done: userName !== 'User' && userName.length > 1, label: 'Full name' },
                   { done: !!userPhone, label: 'Phone number' },
-                  { done: !!accountType, label: 'Listing account' },
+                  { done: approvedTypes.length > 0 || !!accountType, label: 'Listing account' },
                 ];
                 const completed = steps.filter(s => s.done).length;
                 const percent = Math.round((completed / steps.length) * 100);
@@ -1192,6 +1212,52 @@ export default function ProfilePage() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Type Confirmation Modal */}
+      {showDeleteConfirm && deletingAccountType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="text-center">
+              <div className="w-12 h-12 flex items-center justify-center bg-rose-100 rounded-full mx-auto mb-3">
+                <i className="ri-alert-line text-rose-600 text-xl"></i>
+              </div>
+              <h2 className="font-bold text-gray-900 text-base">Remove Account?</h2>
+              <p className="text-sm text-gray-500 mt-2">
+                All listings posted under your <span className="font-semibold capitalize">{deletingAccountType}</span> account will be permanently deleted. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingAccountType(null);
+                }}
+                disabled={isDeletingAccountType}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                No, Keep It
+              </button>
+              <button
+                onClick={confirmDeleteAccountType}
+                disabled={isDeletingAccountType}
+                className="flex-1 px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeletingAccountType ? (
+                  <>
+                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    Removing...
+                  </>
+                ) : (
+                  <>
+                    <i className="ri-delete-bin-line"></i>
+                    Yes, Delete
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
