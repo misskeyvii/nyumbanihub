@@ -37,18 +37,16 @@ export default function ServicesPage() {
     const fetchCounts = async () => {
       const { data } = await supabase
         .from('users')
-        .select('subcategory, account_type, extra_account_types')
-        .eq('is_active', true)
-        .gt('subscription_expires_at', new Date().toISOString());
+        .select('subcategory, account_type')
+        .in('account_type', ['service', 'entertainment'])
+        .eq('is_active', true);
       if (!data) return;
       const c: Record<string, number> = {};
       let svc = 0, ent = 0;
       data.forEach(u => {
-        const hasService = u.account_type === 'service' || (u.extra_account_types || []).includes('service');
-        const hasEntertainment = u.account_type === 'entertainment' || (u.extra_account_types || []).includes('entertainment');
-        if (hasService && u.subcategory) c[u.subcategory] = (c[u.subcategory] || 0) + 1;
-        if (hasService) svc++;
-        if (hasEntertainment) ent++;
+        if (u.subcategory) c[u.subcategory] = (c[u.subcategory] || 0) + 1;
+        if (u.account_type === 'service') svc++;
+        if (u.account_type === 'entertainment') ent++;
       });
       setCounts(c);
       setTotalService(svc);
