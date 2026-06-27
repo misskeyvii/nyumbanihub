@@ -9,6 +9,7 @@ import { supabase } from '../../../lib/supabase';
 type Provider = {
   id: string;
   name: string;
+  business_name: string | null;
   phone: string;
   county: string;
   area: string;
@@ -42,7 +43,7 @@ export default function ProviderProfilePage() {
       const [{ data: user }, { data: posts }] = await Promise.all([
         supabase
           .from('users')
-          .select('id, name, phone, county, area, account_type, subcategory, avatar_url, profile_views')
+          .select('id, name, business_name, phone, county, area, account_type, subcategory, avatar_url, profile_views')
           .eq('id', id)
           .in('account_type', ['service', 'entertainment'])
           .eq('is_active', true)
@@ -112,7 +113,7 @@ export default function ProviderProfilePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div>
-                    <h1 className="font-bold text-gray-900 text-xl leading-tight">{provider.name}</h1>
+                    <h1 className="font-bold text-gray-900 text-xl leading-tight">{provider.business_name || provider.name}</h1>
                     {provider.subcategory && (
                       <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full border mt-1 ${accentLight}`}>
                         {provider.subcategory}

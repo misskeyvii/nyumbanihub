@@ -229,6 +229,7 @@ export default function AdminPage() {
         ...(req.phone && { phone: req.phone }),
         ...(req.county && { county: req.county }),
         ...(normalizedSubcategory && { subcategory: normalizedSubcategory }),
+        ...(req.business_name && { business_name: req.business_name }),
         subscription_expires_at: expiresStr,
         subscription_details: newDetails,
         has_notification: true,

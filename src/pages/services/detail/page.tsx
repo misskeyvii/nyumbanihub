@@ -33,17 +33,14 @@ export default function ServiceDetailPage() {
     const fetch = async () => {
       const { data } = await supabase
         .from('users')
-        .select('id, name, phone, county, subcategory, avatar_url, is_active, account_type, extra_account_types, subscription_details, subscription_expires_at')
+        .select('id, name, business_name, phone, county, subcategory, avatar_url, is_active, account_type, extra_account_types, subscription_details, subscription_expires_at')
         .eq('subcategory', subcategory)
         .eq('is_active', true);
       const now = new Date().toISOString();
       const active = (data || []).filter(p => {
         const hasService = p.account_type === 'service' || (p.extra_account_types || []).includes('service');
         if (!hasService) return false;
-        // Check per-account expiry first, fall back to global expiry
-        const details = p.subscription_details as Record<string, string> | null;
-        const expiry = details?.['service'] ?? p.subscription_expires_at;
-        return expiry && expiry > now;
+        return !!p.subscription_expires_at && p.subscription_expires_at > now;
       });
       setProviders(active);
       setLoading(false);
@@ -125,7 +122,7 @@ export default function ServiceDetailPage() {
                       </div>
                     </div>
                     <div className="px-4 pt-3 pb-1">
-                      <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1">{p.name}</h3>
+                      <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1">{p.business_name || p.name}</h3>
                       {p.county && (
                         <p className="text-xs text-gray-500 flex items-center gap-1">
                           <i className="ri-map-pin-2-line text-emerald-500"></i>
