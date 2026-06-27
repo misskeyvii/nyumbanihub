@@ -1,17 +1,29 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
+  checkRateLimit,
   completeRenewalPayment,
   corsHeaders,
+  getClientIp,
   getSupabaseConfig,
+  log,
+  rateLimitResponse,
   verifyUserJwt,
 } from '../_shared/renewal.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  const ip = getClientIp(req);
+  const { limited, retryAfter } = checkRateLimit(ip);
+  if (limited) {
+    log('check-renewal', 'warn', 'Rate limited', { ip });
+    return rateLimitResponse(retryAfter);
+  }
+
   try {
     const { renewal_id, user_id } = await req.json();
     if (!renewal_id || !user_id) {
+      log('check-renewal', 'warn', 'Missing fields', { ip });
       return new Response(JSON.stringify({ success: false, message: 'Missing renewal_id' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -20,6 +32,7 @@ serve(async (req) => {
 
     const authorized = await verifyUserJwt(req, user_id);
     if (!authorized) {
+      log('check-renewal', 'warn', 'Unauthorized', { ip, user_id });
       return new Response(JSON.stringify({ success: false, message: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -29,17 +42,13 @@ serve(async (req) => {
     const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = getSupabaseConfig();
     const renewalRes = await fetch(
       `${SUPABASE_URL}/rest/v1/renewal_requests?id=eq.${renewal_id}&user_id=eq.${user_id}&select=*`,
-      {
-        headers: {
-          apikey: SUPABASE_SERVICE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-        },
-      }
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     );
     const renewals = await renewalRes.json();
     const renewal = renewals[0];
 
     if (!renewal) {
+      log('check-renewal', 'warn', 'Renewal not found', { ip, user_id, renewal_id });
       return new Response(JSON.stringify({ success: false, message: 'Renewal not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -62,11 +71,7 @@ serve(async (req) => {
         const tokenRes = await fetch('https://openapi.airtel.africa/auth/oauth2/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET,
-            grant_type: 'client_credentials',
-          }),
+          body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'client_credentials' }),
         });
         const { access_token } = await tokenRes.json();
 
@@ -86,6 +91,7 @@ serve(async (req) => {
 
           if (airtelStatus === 'TS' || airtelStatus.includes('SUCCESS')) {
             await completeRenewalPayment(renewal.id, renewal.checkout_request_id);
+            log('check-renewal', 'info', 'Airtel payment confirmed', { renewal_id, user_id });
             return new Response(JSON.stringify({ success: true, status: 'paid' }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -105,6 +111,7 @@ serve(async (req) => {
                 failure_reason: statusData?.status?.message || 'Airtel payment failed',
               }),
             });
+            log('check-renewal', 'info', 'Airtel payment failed', { renewal_id, user_id, airtelStatus });
             return new Response(JSON.stringify({
               success: true,
               status: 'failed',
@@ -115,10 +122,12 @@ serve(async (req) => {
       }
     }
 
+    log('check-renewal', 'info', 'Still pending', { renewal_id, user_id });
     return new Response(JSON.stringify({ success: true, status: 'pending' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
+    log('check-renewal', 'error', 'Unhandled error', { ip, error: String(err) });
     return new Response(JSON.stringify({ success: false, message: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

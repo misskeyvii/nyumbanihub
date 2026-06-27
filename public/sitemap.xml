@@ -7,7 +7,7 @@
   <!-- ===== HOMEPAGE ===== -->
   <url>
     <loc>https://nyumbanilink.com/</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -15,13 +15,13 @@
   <!-- ===== CORE DISCOVERY ===== -->
   <url>
     <loc>https://nyumbanilink.com/explore</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/categories</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
@@ -29,31 +29,31 @@
   <!-- ===== CATEGORY EXPLORE PAGES ===== -->
   <url>
     <loc>https://nyumbanilink.com/explore?category=homes</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/explore?category=apartments</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/explore?category=airbnb</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.88</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/explore?category=hotels</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/explore?category=shops</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
@@ -61,7 +61,7 @@
   <!-- ===== MARKETPLACE ===== -->
   <url>
     <loc>https://nyumbanilink.com/marketplace</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
@@ -69,37 +69,37 @@
   <!-- ===== SERVICES ===== -->
   <url>
     <loc>https://nyumbanilink.com/services</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/services/cleaning</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/services/plumbing</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/services/electrical</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/services/moving</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/services/security</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
@@ -107,7 +107,7 @@
   <!-- ===== ENTERTAINMENT ===== -->
   <url>
     <loc>https://nyumbanilink.com/entertainment</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -115,53 +115,33 @@
   <!-- ===== INFORMATIONAL ===== -->
   <url>
     <loc>https://nyumbanilink.com/how-it-works</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/contact</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://nyumbanilink.com/post-listing</loc>
-    <lastmod>2026-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.65</priority>
-  </url>
-
-  <!-- ===== AUTH ===== -->
-  <url>
-    <loc>https://nyumbanilink.com/signin</loc>
-    <lastmod>2026-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://nyumbanilink.com/signup</loc>
-    <lastmod>2026-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
   </url>
 
   <!-- ===== LEGAL & TRUST ===== -->
   <url>
     <loc>https://nyumbanilink.com/anti-scam</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/privacy</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://nyumbanilink.com/terms</loc>
-    <lastmod>2026-01-01</lastmod>
+    <lastmod>2025-07-01</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

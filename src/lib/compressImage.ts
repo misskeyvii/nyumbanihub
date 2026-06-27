@@ -1,6 +1,11 @@
 // Compresses an image file in the browser before uploading
 // Reduces a 5MB photo to ~150-300KB without visible quality loss
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 export async function compressImage(file: File, maxWidth = 1200, quality = 0.75): Promise<File> {
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw new Error('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.');
+  }
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);

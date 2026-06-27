@@ -1,21 +1,33 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
+  checkRateLimit,
   corsHeaders,
   expectedAmount,
   formatKenyanPhone,
+  getClientIp,
   insertRenewalRequest,
+  log,
   mpesaBaseUrl,
+  rateLimitResponse,
   verifyUserJwt,
 } from '../_shared/renewal.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  const ip = getClientIp(req);
+  const { limited, retryAfter } = checkRateLimit(ip);
+  if (limited) {
+    log('mpesa-stk', 'warn', 'Rate limited', { ip });
+    return rateLimitResponse(retryAfter);
+  }
+
   try {
     const body = await req.json();
     const { phone, amount, account_ref, user_id, months, account_type, user_name, user_email } = body;
 
     if (!phone || !amount || !user_id || !months || !account_type) {
+      log('mpesa-stk', 'warn', 'Missing fields', { ip, user_id });
       return new Response(JSON.stringify({ success: false, message: 'Missing required fields' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -24,6 +36,7 @@ serve(async (req) => {
 
     const authorized = await verifyUserJwt(req, user_id);
     if (!authorized) {
+      log('mpesa-stk', 'warn', 'Unauthorized', { ip, user_id });
       return new Response(JSON.stringify({ success: false, message: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -32,6 +45,7 @@ serve(async (req) => {
 
     const validAmount = expectedAmount(account_type, Number(months));
     if (Number(amount) !== validAmount) {
+      log('mpesa-stk', 'warn', 'Invalid amount', { ip, user_id, amount, validAmount });
       return new Response(JSON.stringify({ success: false, message: 'Invalid payment amount' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -45,6 +59,7 @@ serve(async (req) => {
     const CALLBACK_URL = Deno.env.get('MPESA_CALLBACK_URL');
 
     if (!CONSUMER_KEY || !CONSUMER_SECRET || !SHORTCODE || !PASSKEY || !CALLBACK_URL) {
+      log('mpesa-stk', 'error', 'M-Pesa env vars missing');
       return new Response(JSON.stringify({ success: false, message: 'M-Pesa is not configured yet' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -60,6 +75,7 @@ serve(async (req) => {
     const access_token = tokenData.access_token;
 
     if (!access_token) {
+      log('mpesa-stk', 'error', 'M-Pesa token fetch failed', { ip, user_id });
       return new Response(JSON.stringify({ success: false, message: 'Failed to authenticate with M-Pesa' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -94,6 +110,7 @@ serve(async (req) => {
     const stkData = await stkRes.json();
 
     if (stkData.ResponseCode !== '0') {
+      log('mpesa-stk', 'warn', 'STK push failed', { ip, user_id, code: stkData.ResponseCode });
       return new Response(JSON.stringify({
         success: false,
         message: stkData.errorMessage || stkData.ResponseDescription || 'M-Pesa STK push failed',
@@ -117,6 +134,7 @@ serve(async (req) => {
       status: 'pending',
     });
 
+    log('mpesa-stk', 'info', 'STK push sent', { user_id, renewal_id: renewal.id, account_type, months });
     return new Response(JSON.stringify({
       success: true,
       message: stkData.CustomerMessage || 'Check your phone and enter your M-Pesa PIN',
@@ -124,6 +142,7 @@ serve(async (req) => {
       renewal_id: renewal.id,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (err) {
+    log('mpesa-stk', 'error', 'Unhandled error', { ip, error: String(err) });
     return new Response(JSON.stringify({ success: false, message: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

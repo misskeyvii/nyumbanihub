@@ -3,6 +3,45 @@ export const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ─── Structured logger ───────────────────────────────────────────────────────
+export function log(fn: string, level: 'info' | 'warn' | 'error', msg: string, data?: Record<string, unknown>) {
+  console[level](JSON.stringify({ ts: new Date().toISOString(), fn, level, msg, ...data }));
+}
+
+// ─── In-memory rate limiter (per Deno isolate) ────────────────────────────────
+// Limits: 20 requests per IP per 60 seconds
+const RL_WINDOW_MS = 60_000;
+const RL_MAX       = 20;
+const _rlStore     = new Map<string, { count: number; resetAt: number }>();
+
+export function getClientIp(req: Request): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0].trim()
+    ?? req.headers.get('x-real-ip')
+    ?? 'unknown';
+}
+
+export function checkRateLimit(ip: string): { limited: boolean; retryAfter: number } {
+  const now = Date.now();
+  let entry = _rlStore.get(ip);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 1, resetAt: now + RL_WINDOW_MS };
+    _rlStore.set(ip, entry);
+    return { limited: false, retryAfter: 0 };
+  }
+  entry.count++;
+  if (entry.count > RL_MAX) {
+    return { limited: true, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  return { limited: false, retryAfter: 0 };
+}
+
+export function rateLimitResponse(retryAfter: number) {
+  return new Response(JSON.stringify({ success: false, message: 'Too many requests' }), {
+    status: 429,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(retryAfter) },
+  });
+}
+
 export const PRICING: Record<string, number> = {
   landlord: 500,
   airbnb: 500,
@@ -28,6 +67,9 @@ export function formatKenyanPhone(phone: string): string {
 export function getSupabaseConfig() {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  if (!SUPABASE_URL || !/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(SUPABASE_URL)) {
+    throw new Error('Invalid or missing SUPABASE_URL');
+  }
   return { SUPABASE_URL, SUPABASE_SERVICE_KEY };
 }
 

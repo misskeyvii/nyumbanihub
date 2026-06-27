@@ -8,8 +8,8 @@ customers across Kenya. Every listing is physically verified before going live.
 
 - Live URL: https://mabidha.vercel.app (domain nyumbanihub.com pending purchase)
 - Android App ID: com.nyumbanihub.app
-- Supabase Project ID: xaowhrzkoacwadehdxhy
-- Super Admin Email: kellyoburuodhiambo@yahoo.com
+- Supabase Project ID: <SUPABASE_PROJECT_ID>
+- Super Admin Email: <SUPER_ADMIN_EMAIL>
 - Admin URL: /kelly
 
 ---
@@ -530,9 +530,9 @@ All categories overview page.
 
 ### .env (local)
 ```
-VITE_SUPABASE_URL=https://xaowhrzkoacwadehdxhy.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_nFm4e_wPKsLkGEUgnPnVbQ_7hy_Re-Y
-VITE_SUPABASE_SERVICE_KEY=eyJhbGci... (service role key)
+VITE_SUPABASE_URL=https://<project-id>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
+VITE_SUPABASE_SERVICE_KEY=<your-service-role-key>
 ```
 
 ### Vercel Environment Variables
@@ -562,7 +562,7 @@ Then open Android Studio → Build → Generate Signed APK
 ## Google OAuth Setup
 
 - Provider: Google
-- Client ID: 616234382380-a7chaletcs2os6j1k9ih4npbopi63kr2.apps.googleusercontent.com
+- Client ID: <GOOGLE_OAUTH_CLIENT_ID>
 - Redirect URI: https://mabidha.vercel.app/auth/callback
 - Configured in: Supabase → Authentication → Providers → Google
 - Also configured in: Google Cloud Console → OAuth 2.0 Credentials

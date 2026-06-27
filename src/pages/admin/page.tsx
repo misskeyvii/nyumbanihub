@@ -240,6 +240,31 @@ export default function AdminPage() {
       return;
     }
 
+    if (req.account_type === 'service' || req.account_type === 'entertainment') {
+      const { data: existingListings } = await supabaseAdmin
+        .from('listings')
+        .select('id')
+        .eq('user_id', req.user_id)
+        .eq('listing_type', 'service')
+        .limit(1);
+
+      if (!existingListings || existingListings.length === 0) {
+        const { error: listingError } = await supabaseAdmin.from('listings').insert({
+          user_id: req.user_id,
+          title: req.business_name || `${req.subcategory || req.account_type} Services`,
+          listing_type: 'service',
+          county: req.county || null,
+          phone: req.phone || null,
+          whatsapp: req.phone || null,
+          description: req.message || null,
+          status: 'live',
+        });
+        if (listingError) {
+          console.error('Failed to auto-create listing:', listingError);
+        }
+      }
+    }
+
     const { data: slotConfig, error: slotConfigError } = await supabaseAdmin
       .from('app_config')
       .select('value')

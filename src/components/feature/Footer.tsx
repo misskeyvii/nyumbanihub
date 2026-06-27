@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const FORM_URL = 'https://readdy.ai/api/form/d72jn7kjuufb4jdbl5fg';
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -10,8 +11,8 @@ export default function Footer() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;
-    const sanitized = email.trim().toLowerCase().replace(/[<>"']/g, '');
-    if (!sanitized.match(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)) return;
+    const sanitized = email.trim().toLowerCase().replace(/[^a-zA-Z0-9._%+\-@]/g, '');
+    if (!EMAIL_REGEX.test(sanitized)) return;
     setStatus('loading');
     try {
       const body = new URLSearchParams({ email: sanitized });
