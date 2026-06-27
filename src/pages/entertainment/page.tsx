@@ -123,39 +123,44 @@ export default function EntertainmentPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {displayed.map((p) => (
                 <div key={p.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-rose-200 transition-all group">
-                  <div className="relative">
-                    <div className="w-full h-44 overflow-hidden bg-gray-100 flex items-center justify-center">
-                      {p.avatar_url ? (
-                        <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <span className="text-4xl font-bold text-gray-300">{p.name?.[0]?.toUpperCase()}</span>
+                  <Link to={`/provider/${p.id}`} className="block">
+                    <div className="relative">
+                      <div className="w-full h-44 overflow-hidden bg-gray-100 flex items-center justify-center">
+                        {p.avatar_url ? (
+                          <img src={p.avatar_url} alt={p.name} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <span className="text-4xl font-bold text-gray-300">{p.name?.[0]?.toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="absolute top-3 left-3">
+                        <VerifiedBadge type="verified" size="sm" />
+                      </div>
+                      {p.subcategory && (
+                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-100">
+                          {p.subcategory}
+                        </div>
                       )}
                     </div>
-                    <div className="absolute top-3 left-3">
-                      <VerifiedBadge type="verified" size="sm" />
-                    </div>
-                    {p.subcategory && (
-                      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-100">
-                        {p.subcategory}
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-bold text-gray-900 text-sm mb-1">{p.name}</h3>
-                    {p.county && (
-                      <p className="text-xs text-gray-500 flex items-center gap-1 mb-3">
-                        <i className="ri-map-pin-2-line text-emerald-500"></i>
-                        {p.county}
+                    <div className="px-4 pt-3 pb-1">
+                      <h3 className="font-bold text-gray-900 text-sm mb-1">{p.name}</h3>
+                      {p.county && (
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                          <i className="ri-map-pin-2-line text-emerald-500"></i>
+                          {p.county}
+                        </p>
+                      )}
+                      <p className="text-xs text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                        <i className="ri-image-line"></i> View profile & work photos
                       </p>
-                    )}
-                    <div className="grid grid-cols-2 gap-2">
-                      <a href={`tel:${p.phone}`} className="flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
-                        <i className="ri-phone-fill text-xs"></i> Call
-                      </a>
-                      <a href={`https://wa.me/${p.phone?.replace(/\D/g, '')}?text=Hi ${p.name}, I found you on Nyumbani Hub and I would like to book your services.`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
-                        <i className="ri-whatsapp-fill text-xs"></i> WhatsApp
-                      </a>
                     </div>
+                  </Link>
+                  <div className="grid grid-cols-2 gap-2 px-4 pb-4 pt-2">
+                    <a href={`tel:${p.phone}`} className="flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                      <i className="ri-phone-fill text-xs"></i> Call
+                    </a>
+                    <a href={`https://wa.me/${p.phone?.replace(/\D/g, '')}?text=Hi ${p.name}, I found you on Nyumbani Hub and I would like to book your services.`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                      <i className="ri-whatsapp-fill text-xs"></i> WhatsApp
+                    </a>
                   </div>
                 </div>
               ))}
