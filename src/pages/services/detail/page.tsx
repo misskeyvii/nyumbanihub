@@ -33,11 +33,19 @@ export default function ServiceDetailPage() {
     const fetch = async () => {
       const { data } = await supabase
         .from('users')
-        .select('id, name, phone, county, subcategory, avatar_url, is_active')
+        .select('id, name, phone, county, subcategory, avatar_url, is_active, account_type, extra_account_types, subscription_details, subscription_expires_at')
         .eq('subcategory', subcategory)
-        .eq('is_active', true)
-        .gt('subscription_expires_at', new Date().toISOString());
-      setProviders(data || []);
+        .eq('is_active', true);
+      const now = new Date().toISOString();
+      const active = (data || []).filter(p => {
+        const hasService = p.account_type === 'service' || (p.extra_account_types || []).includes('service');
+        if (!hasService) return false;
+        // Check per-account expiry first, fall back to global expiry
+        const details = p.subscription_details as Record<string, string> | null;
+        const expiry = details?.['service'] ?? p.subscription_expires_at;
+        return expiry && expiry > now;
+      });
+      setProviders(active);
       setLoading(false);
     };
     fetch();

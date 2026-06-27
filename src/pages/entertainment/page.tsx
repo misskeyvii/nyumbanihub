@@ -17,11 +17,17 @@ export default function EntertainmentPage() {
     const fetchProviders = async () => {
       const { data } = await supabase
         .from('users')
-        .select('id, name, phone, county, subcategory, avatar_url, is_active')
-        .eq('account_type', 'entertainment')
-        .eq('is_active', true)
-        .gt('subscription_expires_at', new Date().toISOString());
-      setProviders(data || []);
+        .select('id, name, phone, county, subcategory, avatar_url, is_active, account_type, extra_account_types, subscription_details, subscription_expires_at')
+        .eq('is_active', true);
+      const now = new Date().toISOString();
+      const active = (data || []).filter(p => {
+        const hasEnt = p.account_type === 'entertainment' || (p.extra_account_types || []).includes('entertainment');
+        if (!hasEnt) return false;
+        const details = p.subscription_details as Record<string, string> | null;
+        const expiry = details?.['entertainment'] ?? p.subscription_expires_at;
+        return expiry && expiry > now;
+      });
+      setProviders(active);
       setLoading(false);
     };
     fetchProviders();
