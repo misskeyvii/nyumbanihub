@@ -8,7 +8,7 @@
 - Email verification required for login
 
 ## Steps:
-- [ ] 1. Add `/signup` page (public email/password hdhd signup → users table role='user')
+- [ ] 1. Add `/signup` page (public email/password signup → users table role='user')
 - [ ] 2. Update auth flow: require email_confirmed_at for login
 - [ ] 3. Add favorites system (favorites table + profile favorites UI)
 - [ ] 4. Add listing account request form → pending_requests table → admin panel list
