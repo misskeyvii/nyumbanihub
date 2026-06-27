@@ -46,6 +46,16 @@ type Report = {
 
 const serviceSubcategories = ['Mama Fua', 'Movers', 'Caretakers', 'Plumbing', 'Electricians', 'Security', 'Landscaping', 'Painting', 'Gas Delivery', 'Dispenser Water'];
 const entertainmentSubcategories = ['Sounds & PA', 'Catering', 'DJs', 'MCs'];
+
+// Normalize to canonical casing — prevents 'Gas delivery' vs 'Gas Delivery' mismatches
+function normalizeSubcategory(value: string | null, allSubs: string[]): string | null {
+  if (!value) return null;
+  const match = allSubs.find(s => s.toLowerCase() === value.toLowerCase());
+  return match ?? value;
+}
+function normalizeAccountType(value: string): string {
+  return accountTypes.find(t => t.toLowerCase() === value.toLowerCase()) ?? value.toLowerCase();
+}
 const emptyForm = { name: '', email: '', password: '', phone: '', county: '', area: '', account_type: '', subcategory: '' };
 const emptyMarketerForm = { name: '', email: '', password: '', phone: '' };
 
@@ -188,13 +198,17 @@ export default function AdminPage() {
       return;
     }
 
+    const normalizedAccountType = normalizeAccountType(req.account_type);
+    const allSubs = [...serviceSubcategories, ...entertainmentSubcategories];
+    const normalizedSubcategory = normalizeSubcategory(req.subcategory ?? null, allSubs);
+
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + 1);
     const expiresStr = expiresAt.toISOString();
-    const notificationMessage = `Your "${req.account_type}" listing account for "${req.business_name}" has been approved! Your ${req.account_type} subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`;
+    const notificationMessage = `Your "${normalizedAccountType}" listing account for "${req.business_name}" has been approved! Your ${normalizedAccountType} subscription is active until ${expiresAt.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })}.`;
 
     const currentDetails = (userData.subscription_details as Record<string, string>) || {};
-    const newDetails = { ...currentDetails, [req.account_type]: expiresStr };
+    const newDetails = { ...currentDetails, [normalizedAccountType]: expiresStr };
 
     const hasPrimary = !!userData.account_type && userData.account_type.trim() !== '';
     const existingExtras = (userData.extra_account_types || []).filter(Boolean);
@@ -202,9 +216,9 @@ export default function AdminPage() {
     let nextExtras = existingExtras;
 
     if (!hasPrimary) {
-      nextAccountType = req.account_type;
-    } else if (userData.account_type !== req.account_type && !existingExtras.includes(req.account_type)) {
-      nextExtras = [...existingExtras, req.account_type];
+      nextAccountType = normalizedAccountType;
+    } else if (userData.account_type !== normalizedAccountType && !existingExtras.includes(normalizedAccountType)) {
+      nextExtras = [...existingExtras, normalizedAccountType];
     }
 
     const { error: userUpdateError } = await supabaseAdmin
@@ -214,7 +228,7 @@ export default function AdminPage() {
         extra_account_types: nextExtras,
         ...(req.phone && { phone: req.phone }),
         ...(req.county && { county: req.county }),
-        ...(req.subcategory && { subcategory: req.subcategory }),
+        ...(normalizedSubcategory && { subcategory: normalizedSubcategory }),
         subscription_expires_at: expiresStr,
         subscription_details: newDetails,
         has_notification: true,

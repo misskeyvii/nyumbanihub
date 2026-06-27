@@ -2,6 +2,9 @@ alter table users enable row level security;
 create policy "users_read_all" on users for select using (true);
 create policy "users_update_own" on users for update using (auth.uid() = id);
 create policy "users_insert_own" on users for insert with check (auth.uid() = id);
+-- Allow service role to insert/update any user row (used by admin panel)
+create policy "users_insert_service_role" on users for insert with check (auth.jwt() ->> 'role' = 'service_role');
+create policy "users_update_service_role" on users for update using (auth.jwt() ->> 'role' = 'service_role');
 
 alter table listings enable row level security;
 create policy "listings_read_live" on listings for select using (status = 'live');

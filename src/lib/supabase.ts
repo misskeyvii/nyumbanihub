@@ -16,5 +16,6 @@ export const supabase = createClient(
 // Admin client — bypasses RLS, only used in admin/marketer pages
 export const supabaseAdmin = createClient(
   supabaseUrl,
-  supabaseServiceKey
+  supabaseServiceKey,
+  { auth: { autoRefreshToken: false, persistSession: false } }
 );
