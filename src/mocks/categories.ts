@@ -34,7 +34,7 @@ export const categories: Category[] = [
     count: 387,
     description: 'Short-term stays & getaways',
     color: 'bg-rose-50 text-rose-600',
-    image: 'https://readdy.ai/api/search-image?query=luxury%20airbnb%20villa%20Kenya%20beach%20pool%20tropical%20vacation%20beautiful%20modern&width=400&height=300&seq=101&orientation=landscape'
+    image: 'https://i.postimg.cc/0jSKJ4pK/airbnb.jpg'
   },
   {
     id: 'hotels',
@@ -43,7 +43,7 @@ export const categories: Category[] = [
     count: 215,
     description: 'Business & leisure hotels',
     color: 'bg-amber-50 text-amber-700',
-    image: 'https://readdy.ai/api/search-image?query=luxury%20hotel%20Kenya%20lobby%20reception%20modern%20African%20elegant%20lights&width=400&height=300&seq=102&orientation=landscape'
+    image: 'https://i.postimg.cc/pTFL0Fy4/Fairmont-Ajman.jpg'
   },
   {
     id: 'shops',
@@ -52,7 +52,7 @@ export const categories: Category[] = [
     count: 892,
     description: 'Verified local businesses',
     color: 'bg-sky-50 text-sky-700',
-    image: 'https://readdy.ai/api/search-image?query=modern%20shop%20Kenya%20business%20interior%20clean%20organized%20retail%20market%20display&width=400&height=300&seq=103&orientation=landscape'
+    image: 'https://i.postimg.cc/QMWDsrs5/Empty-shop-window.jpg'
   },
   {
     id: 'services',
