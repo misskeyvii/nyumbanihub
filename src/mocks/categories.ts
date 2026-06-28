@@ -61,7 +61,7 @@ export const categories: Category[] = [
     count: 634,
     description: 'Cleaners, movers & more',
     color: 'bg-violet-50 text-violet-700',
-    image: 'https://readdy.ai/api/search-image?query=professional%20service%20team%20Kenya%20workers%20uniform%20cleaning%20moving%20caretaker%20professional&width=400&height=300&seq=104&orientation=landscape'
+    image: 'https://i.postimg.cc/bYmB6Bff/Nettoyage-professionnel-et-si-vous-arretiez-enfin-de-parler-de-petit-boulot.jpg'
   },
   {
     id: 'marketplace',
@@ -70,6 +70,6 @@ export const categories: Category[] = [
     count: 2100,
     description: 'Verified shop products',
     color: 'bg-orange-50 text-orange-700',
-    image: 'https://readdy.ai/api/search-image?query=marketplace%20products%20Kenya%20verified%20shop%20display%20electronics%20fashion%20goods%20modern%20store&width=400&height=300&seq=105&orientation=landscape'
+    image: 'https://i.postimg.cc/bJB1nbWk/Best-Buy-Deals-Today-Top-Electronics-TV-Laptop-Tech-Discounts-You-Can-Shop-Right-Now.jpg'
   }
 ];
