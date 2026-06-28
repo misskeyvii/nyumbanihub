@@ -16,7 +16,7 @@ export const categories: Category[] = [
     count: 1240,
     description: 'Bedsitters, 1BR, 2BR & more',
     color: 'bg-emerald-50 text-emerald-700',
-    image: 'https://readdy.ai/api/search-image?query=modern%20apartment%20building%20Nairobi%20Kenya%20residential%20complex%20green%20compound%20urban%20architecture&width=400&height=300&seq=100&orientation=landscape'
+    image: 'https://i.postimg.cc/3N8QgQTM/Things-You-Should-Do-Before-Listing-Your-Home.jpg'
   },
   {
     id: 'apartments',
@@ -25,7 +25,7 @@ export const categories: Category[] = [
     count: 876,
     description: 'Studio, 1BR, 2BR & 3BR apartments',
     color: 'bg-teal-50 text-teal-700',
-    image: 'https://readdy.ai/api/search-image?query=modern apartment building complex Nairobi Kenya multiple floors residential units balconies clean architecture urban well designed compound green trees&width=400&height=300&seq=106&orientation=landscape'
+    image: 'https://i.postimg.cc/5NDkJWRy/download-(10).jpg'
   },
   {
     id: 'airbnb',

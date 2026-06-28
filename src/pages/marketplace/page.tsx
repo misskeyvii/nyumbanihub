@@ -50,7 +50,7 @@ export default function MarketplacePage() {
               <span className="w-3 h-3 flex items-center justify-center"><i className="ri-store-2-fill text-xs"></i></span>
               Verified Shops Only
             </span>
-            <h1 className="text-white font-bold text-2xl md:text-4xl">Nyumbani Hub Marketplace</h1>
+            <h1 className="text-white font-bold text-2xl md:text-4xl">Nyumbani Link Marketplace</h1>
             <p className="text-white/70 text-sm mt-2 max-w-lg">Every product is from a verified, traceable physical shop in Kenya. You can visit the seller in real life.</p>
           </div>
         </div>
