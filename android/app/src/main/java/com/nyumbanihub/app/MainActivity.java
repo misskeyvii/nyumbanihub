@@ -3,12 +3,14 @@ package com.nyumbanihub.app;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import androidx.core.splashscreen.SplashScreen;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         handleIntent(getIntent());
     }
@@ -26,7 +28,7 @@ public class MainActivity extends BridgeActivity {
         String url = data.toString();
 
         // If it's our OAuth callback, load it in the WebView
-        if (url.contains("nyumbanihab.vercel.app/auth/callback") || 
+        if (url.contains("nyumbanihub.vercel.app/auth/callback") ||
             url.contains("mabidha.vercel.app/auth/callback") ||
             url.startsWith("com.nyumbanihub.app")) {
             getBridge().getWebView().post(() -> 

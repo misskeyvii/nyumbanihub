@@ -9,7 +9,7 @@ import ListingCardSkeleton from '../../components/base/ListingCardSkeleton';
 import { kenyaCounties } from '../../mocks/listings';
 import { supabase } from '../../lib/supabase';
 
-const categoryOptions = ['All', 'Homes', 'Apartments', 'Airbnb', 'Hotels', 'Shops', 'Services', 'Marketplace'];
+const categoryOptions = ['All', 'Homes', 'Apartments', 'Airbnb', 'Hotels', 'Shops', 'Marketplace'];
 const priceOptions = ['Any Price', 'Under KSh 5K', 'KSh 5K–20K', 'KSh 20K–60K', 'KSh 60K+'];
 const sortOptions = ['Latest', 'Price: Low to High', 'Price: High to Low', 'Top Rated'];
 
@@ -19,7 +19,6 @@ const urlToCategoryMap: Record<string, string> = {
   airbnb: 'Airbnb',
   hotels: 'Hotels',
   shops: 'Shops',
-  services: 'Services',
   marketplace: 'Marketplace',
 };
 
@@ -40,7 +39,7 @@ export default function ExplorePage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   useEffect(() => {
-    supabase.from('listings').select('*').eq('status', 'live').order('created_at', { ascending: false })
+    supabase.from('listings').select('*').eq('status', 'live').neq('listing_type', 'service').order('created_at', { ascending: false })
       .then(({ data }) => { setAllListings(data || []); setLoading(false); });
 
     const channel = supabase
@@ -73,7 +72,7 @@ export default function ExplorePage() {
     if (q) setQuery(q);
   }, [searchParams]);
 
-  const catMap: Record<string, string> = { 'Homes': 'home', 'Apartments': 'apartment', 'Airbnb': 'airbnb', 'Hotels': 'hotel', 'Shops': 'shop', 'Services': 'service', 'Marketplace': 'marketplace' };
+  const catMap: Record<string, string> = { 'Homes': 'home', 'Apartments': 'apartment', 'Airbnb': 'airbnb', 'Hotels': 'hotel', 'Shops': 'shop', 'Marketplace': 'marketplace' };
 
   const filtered = allListings.filter((l) => {
     const catMatch = category === 'All' || l.listing_type === catMap[category];

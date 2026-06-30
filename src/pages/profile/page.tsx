@@ -70,7 +70,7 @@ export default function ProfilePage() {
   const userName = displayName;
   const userPhone = displayPhone;
   const isServiceProvider = approvedTypes.length > 0
-    ? approvedTypes.every(t => SERVICE_TYPES.includes(t))
+    ? approvedTypes.some(t => SERVICE_TYPES.includes(t))
     : SERVICE_TYPES.includes(primaryAccountType);
   const canRenew = approvedTypes.length > 0 || !!primaryAccountType;
   const isMarketer = userRole === 'marketer';
@@ -198,13 +198,13 @@ export default function ProfilePage() {
           const { data } = await supabase.from('portfolios').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
           return { data };
         })());
-      } else {
-        promises.push((async () => {
-          const { data } = await supabase.from('listings').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
-          return { data };
-        })());
       }
-      const [{ data: userData }, { data: pendingData }, { data: contentData }] = await Promise.all(promises);
+      // Always fetch listings regardless of account type
+      promises.push((async () => {
+        const { data } = await supabase.from('listings').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
+        return { data: null, listings: data };
+      })());
+      const [{ data: userData }, { data: pendingData }, { data: portfolioData }, { listings: listingsData }] = await Promise.all(promises);
       if (pendingData) setPendingRequests(pendingData);
       if (userData?.avatar_url) {
         setAvatarUrl(userData.avatar_url);
@@ -217,19 +217,16 @@ export default function ProfilePage() {
       setPrimaryAccountType(userData?.account_type || '');
       if (userData?.has_notification && userData?.notification_message) {
         setNotification(userData.notification_message);
-        // Clear notification after reading
         await supabase.from('users').update({ has_notification: false, notification_message: null }).eq('id', session.user.id);
       }
-      // Sync account_type from DB to localStorage so removed types reflect immediately
       if (userData?.account_type !== undefined) {
         localStorage.setItem('accountType', userData.account_type || '');
       }
-      // Build approved account types list
       const types = [userData?.account_type, ...(userData?.extra_account_types || [])].filter(Boolean) as string[];
       setApprovedTypes(types);
       if (types.length > 0) setRenewAccountType(types[0]);
-      if (isServiceProvider) setPortfolio(contentData || []);
-      else setListings(contentData || []);
+      if (portfolioData) setPortfolio(portfolioData);
+      if (listingsData) setListings(listingsData);
       setLoading(false);
     };
     fetchData();
@@ -1058,8 +1055,8 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Listings — non-service users */}
-          {!isServiceProvider && (!isNormalUser || profileTab === 'listings') && (
+          {/* Listings — non-service users or mixed users */}
+          {(!isServiceProvider || approvedTypes.some(t => !SERVICE_TYPES.includes(t))) && (!isNormalUser || profileTab === 'listings') && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-gray-900 text-lg">My Listings</h2>
