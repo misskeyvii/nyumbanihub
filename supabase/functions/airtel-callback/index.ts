@@ -8,16 +8,31 @@ import {
   log,
   rateLimitResponse,
   updateRenewalByCheckout,
+  verifyWebhookSecret,
 } from '../_shared/renewal.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ message: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const ip = getClientIp(req);
   const { limited, retryAfter } = checkRateLimit(ip);
   if (limited) {
     log('airtel-callback', 'warn', 'Rate limited', { ip });
     return rateLimitResponse(retryAfter);
+  }
+
+  if (!verifyWebhookSecret(req)) {
+    log('airtel-callback', 'warn', 'Invalid webhook secret', { ip });
+    return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {

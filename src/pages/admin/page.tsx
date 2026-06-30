@@ -319,18 +319,10 @@ export default function AdminPage() {
     setAddingAdmin(true);
     setAdminError('');
     setAdminSuccess('');
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email: adminForm.email, password: adminForm.password, email_confirm: true,
+    const { error } = await supabase.functions.invoke('admin-create-user', {
+      body: { ...adminForm, role: 'admin' },
     });
     if (error) { setAdminError(error.message); setAddingAdmin(false); return; }
-    const userId = data.user?.id;
-    if (userId) {
-      const { error: insertError } = await supabaseAdmin.from('users').upsert({
-        id: userId, name: adminForm.name, email: adminForm.email,
-        phone: adminForm.phone || null, role: 'admin', is_active: true,
-      }, { onConflict: 'id' });
-      if (insertError) { setAdminError(insertError.message); setAddingAdmin(false); return; }
-    }
     setAdminSuccess(`Admin account created for ${adminForm.name}!`);
     setAdminForm({ name: '', email: '', password: '', phone: '' });
     setAddingAdmin(false);
@@ -351,18 +343,10 @@ export default function AdminPage() {
     setAddingMarketer(true);
     setMarketerError('');
     setMarketerSuccess('');
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email: marketerForm.email, password: marketerForm.password, email_confirm: true,
+    const { error } = await supabase.functions.invoke('admin-create-user', {
+      body: { ...marketerForm, role: 'marketer' },
     });
     if (error) { setMarketerError(error.message); setAddingMarketer(false); return; }
-    const userId = data.user?.id;
-    if (userId) {
-      const { error: insertError } = await supabaseAdmin.from('users').upsert({
-        id: userId, name: marketerForm.name, email: marketerForm.email,
-        phone: marketerForm.phone || null, role: 'marketer', is_active: true,
-      }, { onConflict: 'id' });
-      if (insertError) { setMarketerError(insertError.message); setAddingMarketer(false); return; }
-    }
     setMarketerSuccess(`Marketer account created for ${marketerForm.name}!`);
     setMarketerForm(emptyMarketerForm);
     setAddingMarketer(false);
@@ -383,26 +367,10 @@ export default function AdminPage() {
     setCreating(true);
     setCreateError('');
     setCreateSuccess('');
-    const { data, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
-      email: form.email, password: form.password, email_confirm: true,
+    const { error } = await supabase.functions.invoke('admin-create-user', {
+      body: { ...form, role: 'user' },
     });
-    if (signUpError) { setCreateError(signUpError.message); setCreating(false); return; }
-    const userId = data.user?.id;
-    if (userId) {
-      const expiresAt = new Date();
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
-      const expiresStr = expiresAt.toISOString();
-      const { error: insertError } = await supabaseAdmin.from('users').upsert({
-        id: userId, name: form.name, email: form.email,
-        phone: form.phone || null, county: form.county || null,
-        area: form.area || null, account_type: form.account_type,
-        subcategory: form.subcategory || null,
-        role: 'user', is_active: true,
-        subscription_expires_at: expiresStr,
-        subscription_details: { [form.account_type]: expiresStr },
-      }, { onConflict: 'id' });
-      if (insertError) { setCreateError(insertError.message); setCreating(false); return; }
-    }
+    if (error) { setCreateError(error.message); setCreating(false); return; }
     setCreateSuccess(`Account created for ${form.name}!`);
     setForm(emptyForm);
     setCreating(false);

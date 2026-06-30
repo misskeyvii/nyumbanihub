@@ -5,13 +5,21 @@ import {
   corsHeaders,
   getClientIp,
   getSupabaseConfig,
+  isValidUuid,
   log,
   rateLimitResponse,
+  readJson,
   verifyUserJwt,
 } from '../_shared/renewal.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ success: false, message: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const ip = getClientIp(req);
   const { limited, retryAfter } = checkRateLimit(ip);
@@ -21,8 +29,8 @@ serve(async (req) => {
   }
 
   try {
-    const { renewal_id, user_id } = await req.json();
-    if (!renewal_id || !user_id) {
+    const { renewal_id, user_id } = await readJson(req);
+    if (!isValidUuid(renewal_id) || !isValidUuid(user_id)) {
       log('check-renewal', 'warn', 'Missing fields', { ip });
       return new Response(JSON.stringify({ success: false, message: 'Missing renewal_id' }), {
         status: 400,
@@ -41,7 +49,7 @@ serve(async (req) => {
 
     const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = getSupabaseConfig();
     const renewalRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/renewal_requests?id=eq.${renewal_id}&user_id=eq.${user_id}&select=*`,
+      `${SUPABASE_URL}/rest/v1/renewal_requests?id=eq.${encodeURIComponent(renewal_id)}&user_id=eq.${encodeURIComponent(user_id)}&select=*`,
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     );
     const renewals = await renewalRes.json();
@@ -77,7 +85,7 @@ serve(async (req) => {
 
         if (access_token) {
           const statusRes = await fetch(
-            `https://openapi.airtel.africa/standard/v1/payments/${renewal.checkout_request_id}`,
+            `https://openapi.airtel.africa/standard/v1/payments/${encodeURIComponent(renewal.checkout_request_id)}`,
             {
               headers: {
                 Authorization: `Bearer ${access_token}`,
@@ -98,7 +106,7 @@ serve(async (req) => {
           }
 
           if (airtelStatus.includes('FAIL') || airtelStatus.includes('CANCEL')) {
-            await fetch(`${SUPABASE_URL}/rest/v1/renewal_requests?id=eq.${renewal_id}`, {
+            await fetch(`${SUPABASE_URL}/rest/v1/renewal_requests?id=eq.${encodeURIComponent(renewal_id)}`, {
               method: 'PATCH',
               headers: {
                 apikey: SUPABASE_SERVICE_KEY,

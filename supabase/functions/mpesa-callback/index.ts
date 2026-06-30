@@ -8,16 +8,30 @@ import {
   log,
   rateLimitResponse,
   updateRenewalByCheckout,
+  verifyWebhookSecret,
 } from '../_shared/renewal.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: 'Accepted' }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   const ip = getClientIp(req);
   const { limited, retryAfter } = checkRateLimit(ip);
   if (limited) {
     log('mpesa-callback', 'warn', 'Rate limited', { ip });
     return rateLimitResponse(retryAfter);
+  }
+
+  if (!verifyWebhookSecret(req)) {
+    log('mpesa-callback', 'warn', 'Invalid webhook secret', { ip });
+    return new Response(JSON.stringify({ ResultCode: 1, ResultDesc: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   try {

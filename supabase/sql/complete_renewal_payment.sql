@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION public.complete_renewal_payment(
 RETURNS TABLE(success boolean, message text)
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   r public.renewal_requests%ROWTYPE;
@@ -86,4 +87,6 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.complete_renewal_payment(uuid, text) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.complete_renewal_payment(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.complete_renewal_payment(uuid, text) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.complete_renewal_payment(uuid, text) TO service_role;

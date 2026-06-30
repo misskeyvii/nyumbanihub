@@ -5,15 +5,25 @@ import {
   expectedAmount,
   formatKenyanPhone,
   getClientIp,
-  getSupabaseConfig,
   insertRenewalRequest,
+  isValidKenyanPhone,
+  isValidUuid,
   log,
+  normalizeAccountType,
+  normalizeMonths,
   rateLimitResponse,
+  readJson,
   verifyUserJwt,
 } from '../_shared/renewal.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ success: false, message: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const ip = getClientIp(req);
   const { limited, retryAfter } = checkRateLimit(ip);
@@ -23,10 +33,13 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const body = await readJson(req);
     const { phone, amount, user_id, months, account_type, user_name, user_email } = body;
 
-    if (!phone || !amount || !user_id || !months || !account_type) {
+    const safeMonths = normalizeMonths(months);
+    const safeAccountType = normalizeAccountType(account_type);
+
+    if (!phone || !amount || !isValidUuid(user_id) || !safeMonths || !safeAccountType) {
       log('airtel-stk', 'warn', 'Missing fields', { ip, user_id });
       return new Response(JSON.stringify({ success: false, message: 'Missing required fields' }), {
         status: 400,
@@ -43,7 +56,7 @@ serve(async (req) => {
       });
     }
 
-    const validAmount = expectedAmount(account_type, Number(months));
+    const validAmount = expectedAmount(safeAccountType, safeMonths);
     if (Number(amount) !== validAmount) {
       log('airtel-stk', 'warn', 'Invalid amount', { ip, user_id, amount, validAmount });
       return new Response(JSON.stringify({ success: false, message: 'Invalid payment amount' }), {
@@ -79,7 +92,14 @@ serve(async (req) => {
       });
     }
 
-    const formattedPhone = formatKenyanPhone(String(phone)).replace(/^254/, '');
+    const formattedPhoneFull = formatKenyanPhone(String(phone));
+    if (!isValidKenyanPhone(formattedPhoneFull)) {
+      return new Response(JSON.stringify({ success: false, message: 'Invalid Kenyan phone number' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const formattedPhone = formattedPhoneFull.replace(/^254/, '');
     const reference = `NH-${Date.now()}-${user_id.slice(0, 6)}`;
 
     const payRes = await fetch('https://openapi.airtel.africa/merchant/v1/payments/', {
@@ -119,15 +139,15 @@ serve(async (req) => {
       user_email: user_email ?? null,
       phone: `254${formattedPhone}`,
       amount: validAmount,
-      months: Number(months),
-      account_type,
+      months: safeMonths,
+      account_type: safeAccountType,
       payment_method: 'airtel',
       checkout_request_id: reference,
       payment_reference: payData?.data?.transaction?.id ?? reference,
       status: 'pending',
     });
 
-    log('airtel-stk', 'info', 'Airtel push sent', { user_id, renewal_id: renewal.id, account_type, months });
+    log('airtel-stk', 'info', 'Airtel push sent', { user_id, renewal_id: renewal.id, account_type: safeAccountType, months: safeMonths });
     return new Response(JSON.stringify({
       success: true,
       message: payData?.status?.message || 'Check your phone and enter your Airtel Money PIN',

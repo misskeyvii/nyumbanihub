@@ -52,6 +52,38 @@ export const PRICING: Record<string, number> = {
   entertainment: 400,
 };
 
+export const ACCOUNT_TYPES = new Set(Object.keys(PRICING));
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_JSON_BYTES = 16_384;
+
+export async function readJson(req: Request): Promise<Record<string, unknown>> {
+  const contentLength = Number(req.headers.get('content-length') || '0');
+  if (contentLength > MAX_JSON_BYTES) throw new Error('Request body too large');
+
+  const contentType = req.headers.get('content-type') || '';
+  if (!contentType.toLowerCase().includes('application/json')) {
+    throw new Error('Expected application/json');
+  }
+
+  return await req.json();
+}
+
+export function isValidUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
+export function normalizeMonths(value: unknown): number | null {
+  const months = Number(value);
+  if (!Number.isInteger(months) || months < 1 || months > 12) return null;
+  return months;
+}
+
+export function normalizeAccountType(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const accountType = value.trim().toLowerCase();
+  return ACCOUNT_TYPES.has(accountType) ? accountType : null;
+}
+
 export function expectedAmount(accountType: string, months: number): number {
   return (PRICING[accountType] || 500) * months;
 }
@@ -62,6 +94,17 @@ export function formatKenyanPhone(phone: string): string {
   if (digits.startsWith('0')) return `254${digits.slice(1)}`;
   if (digits.length === 9) return `254${digits}`;
   return digits;
+}
+
+export function isValidKenyanPhone(phone: string): boolean {
+  return /^254(7|1)\d{8}$/.test(phone);
+}
+
+export function verifyWebhookSecret(req: Request): boolean {
+  const expected = Deno.env.get('PAYMENT_WEBHOOK_SECRET');
+  if (!expected) return true;
+  const provided = req.headers.get('x-webhook-secret') || req.headers.get('x-payment-webhook-secret');
+  return provided === expected;
 }
 
 export function getSupabaseConfig() {

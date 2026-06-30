@@ -19,6 +19,17 @@ DECLARE
   v_new_extras TEXT[];
   v_listing_types TEXT[];
 BEGIN
+  IF auth.uid() IS DISTINCT FROM p_user_id
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.users
+      WHERE id = auth.uid()
+        AND role = 'admin'
+    ) THEN
+    RETURN QUERY SELECT false, 'Not authorized', 0, 0;
+    RETURN;
+  END IF;
+
   SELECT account_type, extra_account_types
   INTO v_primary_account, v_extra_accounts
   FROM users WHERE id = p_user_id;
@@ -74,6 +85,6 @@ BEGIN
 
   RETURN QUERY SELECT true, 'Account type deleted successfully', v_listing_count, v_request_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 GRANT EXECUTE ON FUNCTION delete_user_account_type(UUID, TEXT) TO authenticated;

@@ -37,24 +37,10 @@ export default function MarketerPage() {
     setCreating(true);
     setError('');
     setSuccess('');
-    const { data, error: signUpError } = await supabase.auth.signUp({ email: form.email, password: form.password });
-    if (signUpError) { setError(signUpError.message); setCreating(false); return; }
-    const userId = data.user?.id;
-    if (userId) {
-      const expiresAt = new Date();
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
-      const expiresStr = expiresAt.toISOString();
-      const { error: insertError } = await supabaseAdmin.from('users').insert({
-        id: userId, name: form.name, email: form.email,
-        phone: form.phone || null, county: form.county || null,
-        area: form.area || null, account_type: form.account_type,
-        subcategory: form.subcategory || null,
-        role: 'user', is_active: true,
-        subscription_expires_at: form.subscription_expires_at || expiresStr,
-        subscription_details: { [form.account_type]: form.subscription_expires_at || expiresStr },
-      });
-      if (insertError) { setError(insertError.message); setCreating(false); return; }
-    }
+    const { error: createError } = await supabase.functions.invoke('admin-create-user', {
+      body: { ...form, role: 'user' },
+    });
+    if (createError) { setError(createError.message); setCreating(false); return; }
     setSuccess(`Account created for ${form.name}!`);
     setForm(emptyForm);
     setCreating(false);

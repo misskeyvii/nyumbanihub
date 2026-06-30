@@ -6,14 +6,25 @@ import {
   formatKenyanPhone,
   getClientIp,
   insertRenewalRequest,
+  isValidKenyanPhone,
+  isValidUuid,
   log,
+  normalizeAccountType,
+  normalizeMonths,
   mpesaBaseUrl,
   rateLimitResponse,
+  readJson,
   verifyUserJwt,
 } from '../_shared/renewal.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ success: false, message: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const ip = getClientIp(req);
   const { limited, retryAfter } = checkRateLimit(ip);
@@ -23,10 +34,13 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const body = await readJson(req);
     const { phone, amount, account_ref, user_id, months, account_type, user_name, user_email } = body;
 
-    if (!phone || !amount || !user_id || !months || !account_type) {
+    const safeMonths = normalizeMonths(months);
+    const safeAccountType = normalizeAccountType(account_type);
+
+    if (!phone || !amount || !isValidUuid(user_id) || !safeMonths || !safeAccountType) {
       log('mpesa-stk', 'warn', 'Missing fields', { ip, user_id });
       return new Response(JSON.stringify({ success: false, message: 'Missing required fields' }), {
         status: 400,
@@ -43,7 +57,7 @@ serve(async (req) => {
       });
     }
 
-    const validAmount = expectedAmount(account_type, Number(months));
+    const validAmount = expectedAmount(safeAccountType, safeMonths);
     if (Number(amount) !== validAmount) {
       log('mpesa-stk', 'warn', 'Invalid amount', { ip, user_id, amount, validAmount });
       return new Response(JSON.stringify({ success: false, message: 'Invalid payment amount' }), {
@@ -85,6 +99,12 @@ serve(async (req) => {
     const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 14);
     const password = btoa(`${SHORTCODE}${PASSKEY}${timestamp}`);
     const formattedPhone = formatKenyanPhone(String(phone));
+    if (!isValidKenyanPhone(formattedPhone)) {
+      return new Response(JSON.stringify({ success: false, message: 'Invalid Kenyan phone number' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const stkRes = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
       method: 'POST',
@@ -102,8 +122,8 @@ serve(async (req) => {
         PartyB: SHORTCODE,
         PhoneNumber: formattedPhone,
         CallBackURL: CALLBACK_URL,
-        AccountReference: account_ref || `${user_id.slice(0, 8)}-${account_type}`,
-        TransactionDesc: `NyumbaniHub ${account_type} renewal ${months}mo`,
+        AccountReference: typeof account_ref === 'string' && account_ref.length <= 32 ? account_ref : `${user_id.slice(0, 8)}-${safeAccountType}`,
+        TransactionDesc: `NyumbaniHub ${safeAccountType} renewal ${safeMonths}mo`,
       }),
     });
 
@@ -126,15 +146,15 @@ serve(async (req) => {
       user_email: user_email ?? null,
       phone: formattedPhone,
       amount: validAmount,
-      months: Number(months),
-      account_type,
+      months: safeMonths,
+      account_type: safeAccountType,
       payment_method: 'mpesa',
       checkout_request_id: stkData.CheckoutRequestID,
       merchant_request_id: stkData.MerchantRequestID,
       status: 'pending',
     });
 
-    log('mpesa-stk', 'info', 'STK push sent', { user_id, renewal_id: renewal.id, account_type, months });
+    log('mpesa-stk', 'info', 'STK push sent', { user_id, renewal_id: renewal.id, account_type: safeAccountType, months: safeMonths });
     return new Response(JSON.stringify({
       success: true,
       message: stkData.CustomerMessage || 'Check your phone and enter your M-Pesa PIN',
