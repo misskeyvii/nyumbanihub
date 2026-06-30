@@ -6,6 +6,7 @@ import Footer from '../../../components/feature/Footer';
 import VerifiedBadge from '../../../components/base/VerifiedBadge';
 import { serviceTypeInfo } from '../../../mocks/services';
 import { supabase } from '../../../lib/supabase';
+import { createWhatsAppLink } from '../../../lib/phone';
 
 // Maps URL slug -> subcategory value stored in DB
 const slugToSubcategory: Record<string, string> = {
@@ -137,7 +138,7 @@ export default function ServiceDetailPage() {
                       <a href={`tel:${p.phone}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
                         <i className="ri-phone-fill text-xs"></i> Call Now
                       </a>
-                      <a href={`https://wa.me/${p.phone?.replace(/\D/g, '')}?text=Hi ${providerName}, I found you on Nyumbani Hub and I need your services.`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                      <a href={createWhatsAppLink(p.phone, `Hi ${providerName}, I found you on Nyumbani Hub and I need your services.`)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
                         <i className="ri-whatsapp-fill text-xs"></i> WhatsApp
                       </a>
                     </div>

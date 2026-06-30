@@ -4,6 +4,7 @@ import Navbar from '../../../components/feature/Navbar';
 import MobileBottomNav from '../../../components/feature/MobileBottomNav';
 import Footer from '../../../components/feature/Footer';
 import { marketplaceProducts } from '../../../mocks/marketplace';
+import { createWhatsAppLink } from '../../../lib/phone';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,8 +31,10 @@ export default function ProductDetailPage() {
 
   const mapQuery = encodeURIComponent(`${product.shopLocation}, ${product.county}, Kenya`);
   const mapSrc = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-  const whatsappNumber = product.shopPhone.replace(/\D/g, '').replace(/^0/, '254');
-  const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hi! I saw your product "${product.name}" on Nyumbani Hub and I'm interested.`)}`;
+  const whatsappLink = createWhatsAppLink(
+    product.shopPhone,
+    `Hi! I saw your product "${product.name}" on Nyumbani Hub and I'm interested.`
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">

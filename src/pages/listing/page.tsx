@@ -4,6 +4,7 @@ import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import Footer from '../../components/feature/Footer';
 import { supabase } from '../../lib/supabase';
+import { createWhatsAppLink } from '../../lib/phone';
 
 const typeLabel: Record<string, string> = {
   home: 'Home & Rental', apartment: 'Apartment', airbnb: 'Airbnb Stay',
@@ -122,7 +123,10 @@ export default function ListingPage() {
   const location = [listing.area, listing.county].filter(Boolean).join(', ');
   const price = listing.price?.toString().includes('KSh') ? listing.price : `KSh ${listing.price}`;
   const phone = listing.phone || '';
-  const whatsapp = (listing.whatsapp || listing.phone || '').replace('+', '');
+  const whatsappLink = createWhatsAppLink(
+    listing.whatsapp || listing.phone,
+    `Hi, I saw your listing "${listing.title}" on Nyumbani Hub and I'm interested.`
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -293,9 +297,9 @@ export default function ListingPage() {
                       Call Now
                     </a>
                   )}
-                  {whatsapp && (
+                  {whatsappLink && (
                     <a
-                      href={`https://wa.me/${whatsapp}?text=Hi, I saw your listing "${listing.title}" on Nyumbani Hub and I'm interested.`}
+                      href={whatsappLink}
                       target="_blank"
                       rel="nofollow noreferrer"
                       className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm py-3 rounded-xl transition-colors w-full whitespace-nowrap"

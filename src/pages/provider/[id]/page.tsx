@@ -5,6 +5,7 @@ import MobileBottomNav from '../../../components/feature/MobileBottomNav';
 import Footer from '../../../components/feature/Footer';
 import VerifiedBadge from '../../../components/base/VerifiedBadge';
 import { supabase } from '../../../lib/supabase';
+import { createWhatsAppLink } from '../../../lib/phone';
 
 type Provider = {
   id: string;
@@ -156,7 +157,7 @@ export default function ProviderProfilePage() {
                 <i className="ri-phone-fill"></i> Call Now
               </a>
               <a
-                href={`https://wa.me/${provider.phone?.replace(/\D/g, '')}?text=Hi ${providerName}, I found your profile on Nyumbani Hub and I need your services.`}
+                href={createWhatsAppLink(provider.phone, `Hi ${providerName}, I found your profile on Nyumbani Hub and I need your services.`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba58] text-white font-semibold text-sm py-3 rounded-xl transition-colors"

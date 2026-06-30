@@ -7,6 +7,7 @@ import Footer from '../../components/feature/Footer';
 import VerifiedBadge from '../../components/base/VerifiedBadge';
 import { supabase } from '../../lib/supabase';
 import { entertainmentTypes } from '../../mocks/entertainment';
+import { createWhatsAppLink } from '../../lib/phone';
 
 export default function EntertainmentPage() {
   const [activeType, setActiveType] = useState('all');
@@ -161,7 +162,7 @@ export default function EntertainmentPage() {
                       <a href={`tel:${p.phone}`} className="flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
                         <i className="ri-phone-fill text-xs"></i> Call
                       </a>
-                      <a href={`https://wa.me/${p.phone?.replace(/\D/g, '')}?text=Hi ${providerName}, I found you on Nyumbani Hub and I would like to book your services.`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                      <a href={createWhatsAppLink(p.phone, `Hi ${providerName}, I found you on Nyumbani Hub and I would like to book your services.`)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
                         <i className="ri-whatsapp-fill text-xs"></i> WhatsApp
                       </a>
                     </div>
