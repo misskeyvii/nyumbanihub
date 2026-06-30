@@ -55,7 +55,6 @@ export const listingTypeToAccountType: Record<string, string> = {
   airbnb: 'airbnb',
   hotel: 'hotel',
   shop: 'shop',
-  service: 'service',
   marketplace: 'marketplace',
 };
 
@@ -64,7 +63,6 @@ export const accountTypeToListingTypes: Record<string, string[]> = {
   airbnb: ['airbnb'],
   hotel: ['hotel'],
   shop: ['shop'],
-  service: ['service'],
   marketplace: ['marketplace'],
 };
 

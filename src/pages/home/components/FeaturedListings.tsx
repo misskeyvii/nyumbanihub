@@ -7,7 +7,7 @@ export default function FeaturedListings() {
   const [listings, setListings] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from('listings').select('*').eq('status', 'live').order('created_at', { ascending: false }).limit(5)
+    supabase.from('listings').select('*').eq('status', 'live').neq('listing_type', 'service').order('created_at', { ascending: false }).limit(5)
       .then(({ data }) => setListings(data || []));
 
     const channel = supabase

@@ -7,7 +7,7 @@ export default function TrendingSection() {
   const [listings, setListings] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from('listings').select('*').eq('status', 'live').order('created_at', { ascending: false }).limit(8)
+    supabase.from('listings').select('*').eq('status', 'live').neq('listing_type', 'service').order('created_at', { ascending: false }).limit(8)
       .then(({ data }) => setListings(data || []));
 
     const channel = supabase
@@ -16,7 +16,9 @@ export default function TrendingSection() {
         setListings(prev => prev.filter(l => l.id !== payload.old.id));
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'listings' }, payload => {
-        if (payload.new.status !== 'live') setListings(prev => prev.filter(l => l.id !== payload.new.id));
+        if (payload.new.status !== 'live' || payload.new.listing_type === 'service') {
+          setListings(prev => prev.filter(l => l.id !== payload.new.id));
+        }
       })
       .subscribe();
 

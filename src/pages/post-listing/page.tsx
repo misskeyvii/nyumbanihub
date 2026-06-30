@@ -12,7 +12,7 @@ const accountTypeMap: Record<string, string[]> = {
   airbnb: ['airbnb'],
   hotel: ['hotel'],
   shop: ['shop'],
-  service: ['service'],
+  service: [],
   marketplace: ['marketplace'],
   entertainment: [],
 };
@@ -24,7 +24,6 @@ const listingTypes = [
   { id: 'airbnb', icon: 'ri-hotel-bed-fill', label: 'Airbnb Stay', desc: 'Short-term holiday rentals', color: 'bg-rose-50 border-rose-200 text-rose-600' },
   { id: 'hotel', icon: 'ri-building-2-fill', label: 'Hotel / Lodge', desc: 'Guesthouses, hotels, lodges', color: 'bg-amber-50 border-amber-200 text-amber-600' },
   { id: 'shop', icon: 'ri-store-2-fill', label: 'Shop / Business', desc: 'Retail shops, restaurants, salons', color: 'bg-sky-50 border-sky-200 text-sky-600' },
-  { id: 'service', icon: 'ri-customer-service-2-fill', label: 'Service Provider', desc: 'Cleaners, movers, plumbers', color: 'bg-violet-50 border-violet-200 text-violet-600' },
   { id: 'marketplace', icon: 'ri-shopping-bag-3-fill', label: 'Marketplace Product', desc: 'Physical shop products', color: 'bg-orange-50 border-orange-200 text-orange-600' },
 ];
 
