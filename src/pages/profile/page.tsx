@@ -61,6 +61,13 @@ export default function ProfilePage() {
   const userRole = localStorage.getItem('userRole') || '';
   const isNormalUser = userRole === 'user';
 
+  const [businessName, setBusinessName] = useState('');
+  const [businessAvatarUrl, setBusinessAvatarUrl] = useState<string | null>(null);
+  const [editBusinessName, setEditBusinessName] = useState('');
+  const [uploadingBusinessAvatar, setUploadingBusinessAvatar] = useState(false);
+  const [savingBusinessProfile, setSavingBusinessProfile] = useState(false);
+  const [showEditBusinessProfile, setShowEditBusinessProfile] = useState(false);
+  const [businessProfileSaved, setBusinessProfileSaved] = useState(false);
   const [displayName, setDisplayName] = useState(localStorage.getItem('userName') || 'User');
   const [displayPhone, setDisplayPhone] = useState(localStorage.getItem('userPhone') || '');
   const [subscriptionExpiresAt, setSubscriptionExpiresAt] = useState<string | null>(null);
@@ -178,7 +185,7 @@ export default function ProfilePage() {
       if (!session) { navigate('/signin'); return; }
       const promises: Promise<any>[] = [
         (async () => {
-          const { data } = await supabase.from('users').select('avatar_url, subscription_expires_at, subscription_details, has_notification, notification_message, account_type, extra_account_types').eq('id', session.user.id).single();
+          const { data } = await supabase.from('users').select('avatar_url, subscription_expires_at, subscription_details, has_notification, notification_message, account_type, extra_account_types, business_name, business_avatar_url').eq('id', session.user.id).single();
           return { data };
         })(),
         (async () => {
@@ -201,6 +208,10 @@ export default function ProfilePage() {
         setAvatarUrl(userData.avatar_url);
         localStorage.setItem('userAvatar', userData.avatar_url);
       }
+      if (userData?.business_name) setBusinessName(userData.business_name);
+      if (userData?.business_avatar_url) setBusinessAvatarUrl(userData.business_avatar_url);
+      if (userData?.business_name) setBusinessName(userData.business_name);
+      if (userData?.business_avatar_url) setBusinessAvatarUrl(userData.business_avatar_url);
       if (userData?.subscription_expires_at !== undefined) {
         setSubscriptionExpiresAt(userData.subscription_expires_at ?? null);
       }
@@ -251,6 +262,36 @@ export default function ProfilePage() {
     setAvatarUrl(url);
     localStorage.setItem('userAvatar', url);
     setUploadingAvatar(false);
+  };
+
+  const handleBusinessAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBusinessAvatar(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const ext = file.name.split('.').pop();
+    const path = `${session.user.id}/business_avatar.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('listings').upload(path, file, { upsert: true });
+    if (uploadError) { alert('Upload failed: ' + uploadError.message); setUploadingBusinessAvatar(false); return; }
+    const { data: urlData } = supabase.storage.from('listings').getPublicUrl(path);
+    const url = urlData.publicUrl;
+    await supabase.from('users').update({ business_avatar_url: url }).eq('id', session.user.id);
+    setBusinessAvatarUrl(url);
+    setUploadingBusinessAvatar(false);
+  };
+
+  const handleSaveBusinessProfile = async () => {
+    if (!editBusinessName.trim()) return;
+    setSavingBusinessProfile(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    await supabase.from('users').update({ business_name: editBusinessName.trim() }).eq('id', session.user.id);
+    setBusinessName(editBusinessName.trim());
+    setShowEditBusinessProfile(false);
+    setSavingBusinessProfile(false);
+    setBusinessProfileSaved(true);
+    setTimeout(() => setBusinessProfileSaved(false), 3000);
   };
 
   const handleWorkFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -993,6 +1034,83 @@ export default function ProfilePage() {
                     {submittingRequest ? 'Submitting...' : 'Submit Request'}
                   </button>
                 </>
+              )}
+            </div>
+          )}
+
+          {/* Business Profile — service/entertainment users only */}
+          {isServiceProvider && (
+            <div className="bg-white rounded-2xl border border-emerald-100 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-bold text-gray-900">Business Profile</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">This is what clients see on the services page — separate from your personal profile.</p>
+                </div>
+                <button
+                  onClick={() => { setShowEditBusinessProfile(!showEditBusinessProfile); setEditBusinessName(businessName); }}
+                  className="text-xs font-semibold text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  <i className="ri-edit-line mr-1"></i>Edit
+                </button>
+              </div>
+
+              {businessProfileSaved && (
+                <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
+                  <i className="ri-checkbox-circle-line mr-1"></i>Business profile updated!
+                </p>
+              )}
+
+              {/* Business avatar + name preview */}
+              <div className="flex items-center gap-4">
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-emerald-100 flex items-center justify-center">
+                    {businessAvatarUrl ? (
+                      <img src={businessAvatarUrl} alt={businessName || 'Business'} className="w-full h-full object-cover" />
+                    ) : (
+                      <i className="ri-store-2-line text-emerald-400 text-2xl"></i>
+                    )}
+                  </div>
+                  <label className="absolute -bottom-1 -right-1 w-6 h-6 flex items-center justify-center bg-emerald-600 rounded-full cursor-pointer hover:bg-emerald-700 transition-colors">
+                    {uploadingBusinessAvatar ? (
+                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <i className="ri-camera-line text-white text-xs"></i>
+                    )}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleBusinessAvatarUpload} disabled={uploadingBusinessAvatar} />
+                  </label>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">{businessName || <span className="text-gray-400 font-normal">No business name set</span>}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Tap camera to change business photo</p>
+                </div>
+              </div>
+
+              {showEditBusinessProfile && (
+                <div className="space-y-3 border-t border-gray-100 pt-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1.5">Business / Service Name *</label>
+                    <input
+                      value={editBusinessName}
+                      onChange={e => setEditBusinessName(e.target.value)}
+                      placeholder="e.g. Amor Gas Delivery, Natty Sounds"
+                      className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveBusinessProfile}
+                      disabled={!editBusinessName.trim() || savingBusinessProfile}
+                      className={`flex-1 font-bold text-sm py-2.5 rounded-xl transition-colors whitespace-nowrap ${
+                        editBusinessName.trim() && !savingBusinessProfile ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {savingBusinessProfile ? 'Saving...' : 'Save Business Name'}
+                    </button>
+                    <button onClick={() => setShowEditBusinessProfile(false)} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}

@@ -15,6 +15,8 @@ type Provider = {
   account_type: string;
   subcategory: string;
   avatar_url: string | null;
+  business_name: string | null;
+  business_avatar_url: string | null;
   profile_views: number;
 };
 
@@ -42,7 +44,7 @@ export default function ProviderProfilePage() {
       const [{ data: user }, { data: posts }] = await Promise.all([
         supabase
           .from('users')
-          .select('id, name, phone, county, area, account_type, subcategory, avatar_url, profile_views')
+          .select('id, name, phone, county, area, account_type, subcategory, avatar_url, business_name, business_avatar_url, profile_views')
           .eq('id', id)
           .in('account_type', ['service', 'entertainment'])
           .eq('is_active', true)
@@ -84,6 +86,8 @@ export default function ProviderProfilePage() {
   const backLabel = isEntertainment ? 'Entertainment' : 'Services';
   const accentColor = isEntertainment ? 'bg-rose-600' : 'bg-emerald-600';
   const accentLight = isEntertainment ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100';
+  const providerName = provider.business_name || provider.name;
+  const providerAvatar = provider.business_avatar_url || provider.avatar_url;
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -101,10 +105,10 @@ export default function ProviderProfilePage() {
 
               {/* Avatar */}
               <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0 border-4 border-white shadow-md -mt-12">
-                {provider.avatar_url ? (
-                  <img src={provider.avatar_url} alt={provider.name} className="w-full h-full object-cover" />
+                {providerAvatar ? (
+                  <img src={providerAvatar} alt={providerName} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-3xl font-bold text-gray-300">{provider.name?.[0]?.toUpperCase()}</span>
+                  <span className="text-3xl font-bold text-gray-300">{providerName?.[0]?.toUpperCase()}</span>
                 )}
               </div>
 
@@ -112,7 +116,7 @@ export default function ProviderProfilePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div>
-                    <h1 className="font-bold text-gray-900 text-xl leading-tight">{provider.name}</h1>
+                    <h1 className="font-bold text-gray-900 text-xl leading-tight">{providerName}</h1>
                     {provider.subcategory && (
                       <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full border mt-1 ${accentLight}`}>
                         {provider.subcategory}
@@ -152,7 +156,7 @@ export default function ProviderProfilePage() {
                 <i className="ri-phone-fill"></i> Call Now
               </a>
               <a
-                href={`https://wa.me/${provider.phone?.replace(/\D/g, '')}?text=Hi ${provider.name}, I found your profile on Nyumbani Hub and I need your services.`}
+                href={`https://wa.me/${provider.phone?.replace(/\D/g, '')}?text=Hi ${providerName}, I found your profile on Nyumbani Hub and I need your services.`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba58] text-white font-semibold text-sm py-3 rounded-xl transition-colors"
