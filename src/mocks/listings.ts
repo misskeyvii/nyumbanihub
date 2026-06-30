@@ -1,3 +1,5 @@
+export { kenyaCounties } from '../lib/seoLocations';
+
 export interface Listing {
   id: string;
   title: string;
@@ -23,13 +25,6 @@ export interface Listing {
   amenities?: string[];
   postedDate: string;
 }
-
-export const kenyaCounties = [
-  'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret',
-  'Thika', 'Nyeri', 'Kisii', 'Garissa', 'Malindi',
-  'Lamu', 'Kitale', 'Machakos', 'Embu', 'Meru',
-  'Kakamega', 'Kericho', 'Naivasha', 'Nanyuki', 'Isiolo'
-];
 
 export const listings: Listing[] = [
   {

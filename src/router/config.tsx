@@ -26,6 +26,7 @@ const AntiScamPage      = lazy(() => import('../pages/anti-scam/page'));
 const EditListingPage   = lazy(() => import('../pages/edit-listing/page'));
 const ContactPage       = lazy(() => import('../pages/contact/page'));
 const ProviderProfilePage = lazy(() => import('../pages/provider/[id]/page'));
+const HouseHuntingPage  = lazy(() => import('../pages/house-hunting/page'));
 
 const wrap = (el: React.ReactElement) => (
   <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><span className="text-emerald-600 text-sm">Loading...</span></div>}>
@@ -37,10 +38,12 @@ const routes: RouteObject[] = [
   { path: '/',                        element: <Home /> },
   { path: '/listing/:id',             element: wrap(<ListingPage />) },
   { path: '/explore',                 element: wrap(<ExplorePage />) },
+  { path: '/house-hunting/:countySlug', element: wrap(<HouseHuntingPage />) },
   { path: '/categories',              element: wrap(<CategoriesPage />) },
   { path: '/marketplace',             element: wrap(<MarketplacePage />) },
   { path: '/marketplace/product/:id', element: wrap(<ProductDetailPage />) },
   { path: '/services',                element: wrap(<ServicesPage />) },
+  { path: '/services/:type/:countySlug', element: wrap(<ServiceDetailPage />) },
   { path: '/services/:type',          element: wrap(<ServiceDetailPage />) },
   { path: '/entertainment',           element: wrap(<EntertainmentPage />) },
   { path: '/how-it-works',            element: wrap(<HowItWorksPage />) },

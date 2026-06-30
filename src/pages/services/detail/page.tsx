@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import SEO from '../../../components/base/SEO';
 import Navbar from '../../../components/feature/Navbar';
 import MobileBottomNav from '../../../components/feature/MobileBottomNav';
 import Footer from '../../../components/feature/Footer';
@@ -7,6 +8,7 @@ import VerifiedBadge from '../../../components/base/VerifiedBadge';
 import { serviceTypeInfo } from '../../../mocks/services';
 import { supabase } from '../../../lib/supabase';
 import { createWhatsAppLink } from '../../../lib/phone';
+import { countyFromSlug, kenyaCounties, slugifyLocation } from '../../../lib/seoLocations';
 
 // Maps URL slug -> subcategory value stored in DB
 const slugToSubcategory: Record<string, string> = {
@@ -23,8 +25,9 @@ const slugToSubcategory: Record<string, string> = {
 };
 
 export default function ServiceDetailPage() {
-  const { type } = useParams<{ type: string }>();
+  const { type, countySlug } = useParams<{ type: string; countySlug?: string }>();
   const info = serviceTypeInfo[type || ''];
+  const county = countyFromSlug(countySlug);
   const [providers, setProviders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,17 +35,19 @@ export default function ServiceDetailPage() {
     const subcategory = slugToSubcategory[type || ''];
     if (!subcategory) { setLoading(false); return; }
     const fetch = async () => {
-      const { data } = await supabase
+      let query = supabase
         .from('users')
         .select('id, name, phone, county, subcategory, avatar_url, business_name, business_avatar_url, is_active')
         .eq('subcategory', subcategory)
         .eq('account_type', 'service')
         .eq('is_active', true);
+      if (county) query = query.eq('county', county);
+      const { data } = await query;
       setProviders(data || []);
       setLoading(false);
     };
     fetch();
-  }, [type]);
+  }, [type, county]);
 
   if (!info) {
     return (
@@ -52,8 +57,26 @@ export default function ServiceDetailPage() {
     );
   }
 
+  const pageTitle = county ? `${info.label} in ${county}` : info.label;
+  const pageDescription = county
+    ? `Find verified ${info.label.toLowerCase()} providers in ${county}. Contact background-checked Nyumbani Hub service providers directly by phone or WhatsApp.`
+    : `${info.desc}. Browse verified ${info.label.toLowerCase()} providers on Nyumbani Hub.`;
+  const pagePath = county ? `/services/${type}/${slugifyLocation(county)}` : `/services/${type}`;
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${pageTitle} | Nyumbani Hub`,
+    description: pageDescription,
+    url: `https://nyumbanilink.com${pagePath}`,
+    about: [
+      { '@type': 'Thing', name: info.label },
+      ...(county ? [{ '@type': 'Place', name: `${county}, Kenya` }] : []),
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
+      <SEO title={pageTitle} description={pageDescription} path={pagePath} structuredData={structuredData} />
       <Navbar />
       <main className="pt-16">
         {/* Hero */}
@@ -73,8 +96,8 @@ export default function ServiceDetailPage() {
               <span className="w-3 h-3 flex items-center justify-center"><i className="ri-shield-check-fill text-xs"></i></span>
               All Providers Verified
             </span>
-            <h1 className="text-white font-bold text-2xl md:text-4xl">{info.label}</h1>
-            <p className="text-white/70 text-sm mt-2 max-w-md">{info.desc}</p>
+            <h1 className="text-white font-bold text-2xl md:text-4xl">{pageTitle}</h1>
+            <p className="text-white/70 text-sm mt-2 max-w-md">{county ? `Verified ${info.label.toLowerCase()} providers serving ${county}.` : info.desc}</p>
           </div>
         </div>
 
@@ -83,7 +106,7 @@ export default function ServiceDetailPage() {
           <div className="flex items-center gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide">
             <div className="flex-shrink-0 bg-white rounded-2xl border border-gray-100 px-5 py-3 text-center">
               <p className="text-xl font-bold text-gray-900">{providers.length}</p>
-              <p className="text-xs text-gray-500">Verified Providers</p>
+              <p className="text-xs text-gray-500">{county ? `${county} Providers` : 'Verified Providers'}</p>
             </div>
             <div className="flex-shrink-0 bg-white rounded-2xl border border-gray-100 px-5 py-3 text-center">
               <p className="text-xl font-bold text-emerald-600">100%</p>
@@ -152,7 +175,7 @@ export default function ServiceDetailPage() {
                 <i className="ri-user-search-line text-emerald-400 text-2xl"></i>
               </div>
               <p className="text-gray-600 font-semibold">No providers listed yet</p>
-              <p className="text-gray-400 text-sm mt-1">Be the first {info.label} provider on Nyumbani Hub!</p>
+              <p className="text-gray-400 text-sm mt-1">Be the first {info.label} provider{county ? ` in ${county}` : ''} on Nyumbani Hub!</p>
               <Link to="/signin" className="inline-block mt-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors whitespace-nowrap">
                 Register as Provider
               </Link>
@@ -160,7 +183,7 @@ export default function ServiceDetailPage() {
           )}
 
           {/* Register CTA */}
-          <div className="mt-12 bg-emerald-700 rounded-2xl p-6 md:p-8 text-white text-center">
+        <div className="mt-12 bg-emerald-700 rounded-2xl p-6 md:p-8 text-white text-center">
             <h3 className="font-bold text-xl mb-2">Are You a {info.label} Provider?</h3>
             <p className="text-emerald-100 text-sm max-w-md mx-auto mb-5">
               Get listed on Nyumbani Hub, pass our physical verification, and connect with thousands of Kenyans who need your services.
@@ -168,6 +191,17 @@ export default function ServiceDetailPage() {
             <Link to="/signin" className="inline-block bg-white text-emerald-700 font-bold text-sm px-7 py-3 rounded-xl hover:bg-emerald-50 transition-colors whitespace-nowrap">
               Register as {info.label}
             </Link>
+        </div>
+
+          <div className="mt-8 bg-white rounded-2xl border border-gray-100 p-5">
+            <h3 className="font-bold text-gray-900 text-sm mb-3">{info.label} by County</h3>
+            <div className="flex flex-wrap gap-2">
+              {kenyaCounties.slice(0, 18).map((item) => (
+                <Link key={item} to={`/services/${type}/${slugifyLocation(item)}`} className="text-xs bg-gray-50 border border-gray-200 hover:border-emerald-400 hover:text-emerald-700 px-3 py-1.5 rounded-full">
+                  {info.label} in {item}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </main>
