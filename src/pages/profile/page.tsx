@@ -193,18 +193,9 @@ export default function ProfilePage() {
           .eq('user_id', session.user.id)
           .then(({ data }) => setFavorites((data as unknown as Favorite[]) || []));
       }
-      if (isServiceProvider) {
-        promises.push((async () => {
-          const { data } = await supabase.from('portfolios').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
-          return { data };
-        })());
-      }
-      // Always fetch listings regardless of account type
-      promises.push((async () => {
-        const { data } = await supabase.from('listings').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
-        return { data: null, listings: data };
-      })());
-      const [{ data: userData }, { data: pendingData }, { data: portfolioData }, { listings: listingsData }] = await Promise.all(promises);
+
+      const [{ data: userData }, { data: pendingData }] = await Promise.all(promises);
+
       if (pendingData) setPendingRequests(pendingData);
       if (userData?.avatar_url) {
         setAvatarUrl(userData.avatar_url);
@@ -225,8 +216,19 @@ export default function ProfilePage() {
       const types = [userData?.account_type, ...(userData?.extra_account_types || [])].filter(Boolean) as string[];
       setApprovedTypes(types);
       if (types.length > 0) setRenewAccountType(types[0]);
-      if (portfolioData) setPortfolio(portfolioData);
-      if (listingsData) setListings(listingsData);
+
+      const hasService = types.some(t => SERVICE_TYPES.includes(t));
+
+      // Fetch portfolio if service/entertainment user
+      if (hasService) {
+        const { data: portfolioData } = await supabase.from('portfolios').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
+        setPortfolio(portfolioData || []);
+      }
+
+      // Always fetch listings
+      const { data: listingsData } = await supabase.from('listings').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false });
+      setListings(listingsData || []);
+
       setLoading(false);
     };
     fetchData();
