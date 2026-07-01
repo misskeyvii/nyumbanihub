@@ -46,7 +46,7 @@ export default function HouseHuntingPage() {
         <main className="pt-28 px-4 text-center">
           <h1 className="text-2xl font-bold text-gray-900">County not found</h1>
           <p className="text-sm text-gray-500 mt-2">Browse verified homes across Kenya instead.</p>
-          <Link to="/explore?category=homes" className="inline-block mt-5 bg-emerald-600 text-white text-sm font-bold px-5 py-3 rounded-xl">
+          <Link to="/homes" className="inline-block mt-5 bg-emerald-600 text-white text-sm font-bold px-5 py-3 rounded-xl">
             Browse Homes
           </Link>
         </main>
@@ -88,7 +88,7 @@ export default function HouseHuntingPage() {
         <section className="bg-white border-b border-gray-100 px-4 md:px-6 py-10">
           <div className="max-w-7xl mx-auto">
             <div className="max-w-3xl">
-              <Link to="/explore?category=homes" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
+              <Link to="/homes" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">
                 House Hunting Kenya
               </Link>
               <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mt-2">{title}</h1>
@@ -96,10 +96,10 @@ export default function HouseHuntingPage() {
                 Browse verified vacant homes, bedsitters, studios, one-bedroom houses and apartments in {county}. Nyumbani Hub helps tenants contact trusted landlords directly and avoid scams.
               </p>
               <div className="flex flex-wrap gap-2 mt-5">
-                <Link to={`/explore?category=homes&county=${encodeURIComponent(county)}`} className="bg-emerald-600 text-white text-sm font-bold px-5 py-3 rounded-xl">
+                <Link to={`/homes?county=${encodeURIComponent(county)}`} className="bg-emerald-600 text-white text-sm font-bold px-5 py-3 rounded-xl">
                   View Homes in {county}
                 </Link>
-                <Link to={`/explore?category=apartments&county=${encodeURIComponent(county)}`} className="bg-gray-100 text-gray-700 text-sm font-bold px-5 py-3 rounded-xl">
+                <Link to={`/apartments?county=${encodeURIComponent(county)}`} className="bg-gray-100 text-gray-700 text-sm font-bold px-5 py-3 rounded-xl">
                   View Apartments
                 </Link>
               </div>
@@ -125,7 +125,7 @@ export default function HouseHuntingPage() {
             <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
               <p className="font-bold text-gray-900">No vacant homes listed in {county} yet</p>
               <p className="text-sm text-gray-500 mt-2">Check the main listings page or come back soon as new verified rentals are added.</p>
-              <Link to="/explore?category=homes" className="inline-block mt-5 bg-emerald-600 text-white text-sm font-bold px-5 py-3 rounded-xl">
+              <Link to="/homes" className="inline-block mt-5 bg-emerald-600 text-white text-sm font-bold px-5 py-3 rounded-xl">
                 Browse All Homes
               </Link>
             </div>

@@ -103,9 +103,9 @@ export default function Footer() {
             <h4 className="font-semibold text-gray-900 text-sm mb-3">Explore</h4>
             <ul className="space-y-2">
               {[
-                { label: 'Homes & Rentals', path: '/explore?category=homes' },
-                { label: 'Airbnb Stays', path: '/explore?category=airbnb' },
-                { label: 'Hotels', path: '/explore?category=hotels' },
+                { label: 'Homes & Rentals', path: '/homes' },
+                { label: 'Airbnb Stays', path: '/airbnb' },
+                { label: 'Hotels', path: '/hotels' },
                 { label: 'Services', path: '/services' },
                 { label: 'Marketplace', path: '/marketplace' },
               ].map(({ label, path }) => (

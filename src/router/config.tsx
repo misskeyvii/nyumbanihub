@@ -37,6 +37,11 @@ const wrap = (el: React.ReactElement) => (
 const routes: RouteObject[] = [
   { path: '/',                        element: <Home /> },
   { path: '/listing/:id',             element: wrap(<ListingPage />) },
+  { path: '/homes',                   element: wrap(<ExplorePage fixedCategory="homes" heroImage="https://i.postimg.cc/6Ts6tMXN/download-(11).jpg" />) },
+  { path: '/apartments',              element: wrap(<ExplorePage fixedCategory="apartments" heroImage="https://readdy.ai/api/search-image?query=kenyan%20apartment%20balcony%20city%20skyline%20modern%20interior&width=1400&height=420&orientation=landscape" />) },
+  { path: '/airbnb',                  element: wrap(<ExplorePage fixedCategory="airbnb" heroImage="https://readdy.ai/api/search-image?query=cozy%20kenyan%20airbnb%20cottage%20vacation%20home%20garden%20sunset&width=1400&height=420&orientation=landscape" />) },
+  { path: '/hotels',                  element: wrap(<ExplorePage fixedCategory="hotels" heroImage="https://readdy.ai/api/search-image?query=kenyan%20hotel%20lobby%20luxury%20comfortable%20modern%20interior&width=1400&height=420&orientation=landscape" />) },
+  { path: '/shops',                   element: wrap(<ExplorePage fixedCategory="shops" heroImage="https://readdy.ai/api/search-image?query=kenyan%20retail%20shop%20market%20store%20friendly%20staff%20bright%20interior&width=1400&height=420&orientation=landscape" />) },
   { path: '/explore',                 element: wrap(<ExplorePage />) },
   { path: '/house-hunting/:countySlug', element: wrap(<HouseHuntingPage />) },
   { path: '/categories',              element: wrap(<CategoriesPage />) },

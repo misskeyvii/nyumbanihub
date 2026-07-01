@@ -44,7 +44,7 @@ export function getActiveAccountTypes(
       at,
       at === accountType ? subscriptionExpiresAt : null
     );
-    if (!expiry) return true;
+    if (!expiry) return false;
     return new Date(expiry) >= new Date();
   });
 }

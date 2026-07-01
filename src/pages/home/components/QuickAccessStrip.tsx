@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 
 const quickLinks = [
-  { label: 'Homes', icon: 'ri-home-4-fill', color: 'text-emerald-600', bg: 'bg-emerald-50', to: '/explore?category=homes' },
-  { label: 'Apartments', icon: 'ri-building-4-fill', color: 'text-teal-600', bg: 'bg-teal-50', to: '/explore?category=apartments' },
-  { label: 'Airbnb', icon: 'ri-building-2-fill', color: 'text-sky-600', bg: 'bg-sky-50', to: '/explore?category=airbnb' },
-  { label: 'Hotels', icon: 'ri-hotel-fill', color: 'text-indigo-600', bg: 'bg-indigo-50', to: '/explore?category=hotels' },
-  { label: 'Shops', icon: 'ri-store-2-fill', color: 'text-amber-600', bg: 'bg-amber-50', to: '/explore?category=shops' },
+  { label: 'Homes', icon: 'ri-home-4-fill', color: 'text-emerald-600', bg: 'bg-emerald-50', to: '/homes' },
+  { label: 'Apartments', icon: 'ri-building-4-fill', color: 'text-teal-600', bg: 'bg-teal-50', to: '/apartments' },
+  { label: 'Airbnb', icon: 'ri-building-2-fill', color: 'text-sky-600', bg: 'bg-sky-50', to: '/airbnb' },
+  { label: 'Hotels', icon: 'ri-hotel-fill', color: 'text-indigo-600', bg: 'bg-indigo-50', to: '/hotels' },
+  { label: 'Shops', icon: 'ri-store-2-fill', color: 'text-amber-600', bg: 'bg-amber-50', to: '/shops' },
   { label: 'Marketplace', icon: 'ri-shopping-bag-2-fill', color: 'text-rose-500', bg: 'bg-rose-50', to: '/marketplace' },
   { label: 'Mama Fua', icon: 'ri-home-heart-fill', color: 'text-pink-600', bg: 'bg-pink-50', to: '/services/mama-fua' },
   { label: 'Movers', icon: 'ri-truck-fill', color: 'text-orange-600', bg: 'bg-orange-50', to: '/services/movers' },

@@ -57,7 +57,15 @@ export default function CategoriesPage() {
                   </div>
                 </div>
                 <Link
-                  to={`/explore?category=${cat.id}`}
+                  to={
+                    ['homes', 'apartments', 'airbnb', 'hotels', 'shops'].includes(cat.id)
+                      ? `/${cat.id}`
+                      : cat.id === 'services'
+                        ? '/services'
+                        : cat.id === 'marketplace'
+                          ? '/marketplace'
+                          : `/explore?category=${cat.id}`
+                  }
                   className="absolute right-4 bottom-4 bg-white text-emerald-700 font-semibold text-xs px-4 py-2 rounded-xl hover:bg-emerald-50 transition-colors whitespace-nowrap"
                 >
                   Browse All
@@ -74,7 +82,15 @@ export default function CategoriesPage() {
                   {(subCategories[cat.id] || []).map((sub) => (
                     <Link
                       key={sub}
-                      to={`/explore?category=${cat.id}&sub=${sub.toLowerCase().replace(/\s/g, '-')}`}
+                      to={
+                        ['homes', 'apartments', 'airbnb', 'hotels', 'shops'].includes(cat.id)
+                          ? `/${cat.id}?sub=${sub.toLowerCase().replace(/\s/g, '-')}`
+                          : cat.id === 'services'
+                            ? `/services?sub=${sub.toLowerCase().replace(/\s/g, '-')}`
+                            : cat.id === 'marketplace'
+                              ? `/marketplace?sub=${sub.toLowerCase().replace(/\s/g, '-')}`
+                              : `/explore?category=${cat.id}&sub=${sub.toLowerCase().replace(/\s/g, '-')}`
+                      }
                       className="text-xs font-medium bg-gray-50 border border-gray-200 hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 text-gray-600 px-3 py-1.5 rounded-full transition-colors whitespace-nowrap"
                     >
                       {sub}

@@ -44,7 +44,7 @@ export default function CategoriesSection() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
           {categories.map((cat) => (
             <Link
-              to={`/explore?category=${cat.id}`}
+              to={['homes', 'apartments', 'airbnb', 'hotels', 'shops'].includes(cat.id) ? `/${cat.id}` : `/explore?category=${cat.id}`}
               key={cat.id}
               className="group bg-white rounded-2xl p-4 md:p-5 border border-gray-100 hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer text-center"
             >

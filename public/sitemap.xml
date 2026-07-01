@@ -19,31 +19,31 @@
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://nyumbanilink.com/explore?category=homes</loc>
+    <loc>https://nyumbanilink.com/homes</loc>
     <lastmod>2026-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nyumbanilink.com/explore?category=apartments</loc>
+    <loc>https://nyumbanilink.com/apartments</loc>
     <lastmod>2026-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nyumbanilink.com/explore?category=airbnb</loc>
+    <loc>https://nyumbanilink.com/airbnb</loc>
     <lastmod>2026-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.88</priority>
   </url>
   <url>
-    <loc>https://nyumbanilink.com/explore?category=hotels</loc>
+    <loc>https://nyumbanilink.com/hotels</loc>
     <lastmod>2026-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://nyumbanilink.com/explore?category=shops</loc>
+    <loc>https://nyumbanilink.com/shops</loc>
     <lastmod>2026-07-01</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
