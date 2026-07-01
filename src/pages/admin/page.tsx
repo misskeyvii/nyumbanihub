@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { kenyaCounties } from '../../mocks/listings';
-import { serviceSubcategories, entertainmentSubcategories, allSubcategories } from '../../lib/subcategories';
+import { serviceSubcategories, entertainmentSubcategories } from '../../lib/subcategories';
 
 type User = {
   id: string;
