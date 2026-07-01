@@ -4,8 +4,7 @@ import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { kenyaCounties } from '../../mocks/listings';
 
 const accountTypes = ['landlord', 'airbnb', 'hotel', 'shop', 'marketplace', 'service', 'entertainment'];
-const serviceSubcategories = ['Mama Fua', 'Movers', 'Caretakers', 'Plumbing', 'Electricians', 'Security', 'Landscaping', 'Painting', 'Gas Delivery', 'Dispenser Water'];
-const entertainmentSubcategories = ['Sounds & PA', 'Catering', 'DJs', 'MCs'];
+import { serviceSubcategories, entertainmentSubcategories } from '../../lib/subcategories';
 const emptyForm = { name: '', email: '', password: '', phone: '', county: '', area: '', account_type: '', subcategory: '', subscription_expires_at: '' };
 
 export default function MarketerPage() {

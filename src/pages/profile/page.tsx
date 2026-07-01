@@ -4,6 +4,7 @@ import Navbar from '../../components/feature/Navbar';
 import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import { supabase } from '../../lib/supabase';
 import { getSubscriptionExpiry, accountTypeToListingTypes, parseSubscriptionDetails } from '../../lib/subscription';
+import { serviceSubcategories, entertainmentSubcategories } from '../../lib/subcategories';
 
 type Favorite = {
   id: string;
@@ -1004,7 +1005,7 @@ export default function ProfilePage() {
                         <label className="text-xs font-semibold text-gray-500 block mb-1.5">Service Type *</label>
                         <select value={requestForm.subcategory} onChange={e => setRequestForm({ ...requestForm, subcategory: e.target.value })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
                           <option value="">Select service type</option>
-                          {['Mama Fua', 'Movers', 'Caretakers', 'Plumbing', 'Electricians', 'Security', 'Landscaping', 'Painting', 'Gas Delivery', 'Dispenser Water'].map(s => <option key={s} value={s}>{s}</option>)}
+                          {serviceSubcategories.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
                     )}
@@ -1013,7 +1014,7 @@ export default function ProfilePage() {
                         <label className="text-xs font-semibold text-gray-500 block mb-1.5">Entertainment Type *</label>
                         <select value={requestForm.subcategory} onChange={e => setRequestForm({ ...requestForm, subcategory: e.target.value })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
                           <option value="">Select entertainment type</option>
-                          {['Sounds & PA', 'Catering', 'DJs', 'MCs'].map(s => <option key={s} value={s}>{s}</option>)}
+                          {entertainmentSubcategories.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
                     )}

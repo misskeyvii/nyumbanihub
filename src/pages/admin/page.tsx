@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, supabaseAdmin } from '../../lib/supabase';
 import { kenyaCounties } from '../../mocks/listings';
+import { serviceSubcategories, entertainmentSubcategories, allSubcategories } from '../../lib/subcategories';
 
 type User = {
   id: string;
@@ -44,8 +45,7 @@ type Report = {
   users: { id: string; name: string; email: string } | null;
 };
 
-const serviceSubcategories = ['Mama Fua', 'Movers', 'Caretakers', 'Plumbing', 'Electricians', 'Security', 'Landscaping', 'Painting', 'Gas Delivery', 'Dispenser Water'];
-const entertainmentSubcategories = ['Sounds & PA', 'Catering', 'DJs', 'MCs'];
+// subcategories are centralized in src/lib/subcategories.ts
 
 // Normalize to canonical casing — prevents 'Gas delivery' vs 'Gas Delivery' mismatches
 function normalizeSubcategory(value: string | null, allSubs: string[]): string | null {

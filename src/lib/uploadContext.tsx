@@ -8,6 +8,7 @@ interface UploadJob {
   title: string;
   progress: number; // 0-100
   status: 'uploading' | 'done' | 'error';
+  errorMessage?: string | null;
 }
 
 interface UploadContextType {
@@ -104,8 +105,13 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       // Auto-dismiss after 5 seconds
       setTimeout(() => setJobs(prev => prev.filter(j => j.id !== id)), 5000);
 
-    } catch {
-      updateJob(id, { status: 'error' });
+    } catch (err: any) {
+      // Log error for debugging and show a user-facing message in the toast
+      // so we can diagnose why some uploads fail (permissions, storage, DB, etc.).
+      // Keep the original behavior of marking the job as errored.
+      // eslint-disable-next-line no-console
+      console.error('Listing upload failed', err);
+      updateJob(id, { status: 'error', errorMessage: err?.message ?? String(err) });
     }
   }, []);
 
@@ -141,7 +147,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
                     <p className="text-xs text-gray-400">
                       {job.status === 'uploading' && `Uploading... ${job.progress}%`}
                       {job.status === 'done' && 'Listing published successfully!'}
-                      {job.status === 'error' && 'Upload failed. Please try again.'}
+                      {job.status === 'error' && (job.errorMessage ? job.errorMessage : 'Upload failed. Please try again.')}
                     </p>
                   </div>
                 </div>
