@@ -20,7 +20,7 @@ DECLARE
 BEGIN
   SELECT * INTO r
   FROM public.renewal_requests
-  WHERE id = p_renewal_id AND status = 'pending'
+  WHERE id = p_renewal_id AND status IN ('pending', 'failed')
   FOR UPDATE;
 
   IF NOT FOUND THEN

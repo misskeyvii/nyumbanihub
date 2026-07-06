@@ -38,7 +38,7 @@ export default function ProfilePage() {
   const [requestError, setRequestError] = useState('');
   const [pendingRequests, setPendingRequests] = useState<{ id: string; account_type: string; subcategory?: string; status: string; created_at: string }[]>([]);
   const [showRenew, setShowRenew] = useState(false);
-  const [renewStep, setRenewStep] = useState<'account' | 'months' | 'method' | 'mpesa' | 'airtel' | 'waiting'>('account');
+  const [renewStep, setRenewStep] = useState<'account' | 'months' | 'method' | 'mpesa' | 'airtel' | 'pesapal' | 'waiting'>('account');
   const [renewPhone, setRenewPhone] = useState('');
   const [renewing, setRenewing] = useState(false);
   const [renewSuccess, setRenewSuccess] = useState(false);
@@ -46,10 +46,13 @@ export default function ProfilePage() {
   const [renewMonths, setRenewMonths] = useState(1);
   const [renewError, setRenewError] = useState('');
   const [renewalId, setRenewalId] = useState<string | null>(null);
-  const [renewPaymentMethod, setRenewPaymentMethod] = useState<'mpesa' | 'airtel'>('mpesa');
+  const [renewPaymentMethod, setRenewPaymentMethod] = useState<'mpesa' | 'airtel' | 'pesapal'>('mpesa');
+  const [pesapalTrackingId, setPesapalTrackingId] = useState<string | null>(null);
   const [approvedTypes, setApprovedTypes] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
   const isNewUser = searchParams.get('new') === 'true';
+  const renewalFromCallback = searchParams.get('renewal');
+  const trackingFromCallback = searchParams.get('OrderTrackingId');
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -127,9 +130,14 @@ export default function ProfilePage() {
 
       attempts += 1;
 
-      const { data: statusData, error: statusError } = await supabase.functions.invoke('check-renewal-payment', {
-        body: { renewal_id: renewalId, user_id: session.user.id },
-      });
+      const { data: statusData, error: statusError } = await supabase.functions.invoke(
+        renewPaymentMethod === 'pesapal' ? 'pesapal-status' : 'check-renewal-payment',
+        {
+          body: renewPaymentMethod === 'pesapal'
+            ? { renewal_id: renewalId, user_id: session.user.id, order_tracking_id: pesapalTrackingId }
+            : { renewal_id: renewalId, user_id: session.user.id },
+        }
+      );
 
       if (!statusError && statusData?.status === 'paid') {
         await refreshSubscriptionData(session.user.id);
@@ -139,7 +147,7 @@ export default function ProfilePage() {
 
       if (!statusError && statusData?.status === 'failed') {
         setRenewError(statusData.failure_reason || 'Payment failed or was cancelled.');
-        setRenewStep(renewPaymentMethod);
+        setRenewStep(renewPaymentMethod === 'pesapal' ? 'method' : renewPaymentMethod);
         setRenewalId(null);
         return true;
       }
@@ -228,6 +236,15 @@ export default function ProfilePage() {
       const types = [userData?.account_type, ...(userData?.extra_account_types || [])].filter(Boolean) as string[];
       setApprovedTypes(types);
       if (types.length > 0) setRenewAccountType(types[0]);
+
+      // Handle Pesapal callback redirect
+      if (renewalFromCallback) {
+        setRenewalId(renewalFromCallback);
+        if (trackingFromCallback) setPesapalTrackingId(trackingFromCallback);
+        setRenewPaymentMethod('pesapal');
+        setShowRenew(true);
+        setRenewStep('waiting');
+      }
 
       const hasService = types.some(t => SERVICE_TYPES.includes(t));
 
@@ -476,6 +493,37 @@ export default function ProfilePage() {
   };
 
   const renewAmount = (PRICING[renewAccountType] || 500) * renewMonths;
+
+  const handlePesapalRenew = async () => {
+    setRenewing(true);
+    setRenewError('');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setRenewing(false); return; }
+    try {
+      const { data, error } = await supabase.functions.invoke('pesapal-initiate', {
+        body: {
+          amount: renewAmount,
+          account_type: renewAccountType,
+          months: renewMonths,
+          user_id: session.user.id,
+          user_name: displayName,
+          user_email: session.user.email,
+        },
+      });
+      if (error || !data?.redirect_url) {
+        setRenewError(error?.message || data?.error || 'Could not start Pesapal payment.');
+        setRenewing(false);
+        return;
+      }
+      setRenewalId(data.renewal_id ?? null);
+      setPesapalTrackingId(data.order_tracking_id ?? null);
+      window.open(data.redirect_url, '_blank');
+      setRenewStep('waiting');
+    } catch {
+      setRenewError('Something went wrong. Please try again.');
+    }
+    setRenewing(false);
+  };
 
   const handleRenew = async () => {
     if (!renewPhone.trim()) return;
@@ -1303,30 +1351,52 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* WAITING FOR PIN */}
+            {/* WAITING FOR PIN / PESAPAL */}
             {!renewSuccess && renewStep === 'waiting' && (
               <div className="text-center py-4 space-y-4">
-                <div className={`w-14 h-14 flex items-center justify-center rounded-full mx-auto ${
-                  renewPaymentMethod === 'mpesa' ? 'bg-[#00A550]/10' : 'bg-[#E40000]/10'
-                }`}>
-                  <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-                <p className="font-bold text-gray-900">Check Your Phone</p>
-                <p className="text-sm text-gray-500">
-                  A {renewPaymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} prompt has been sent to{' '}
-                  <strong className="text-gray-900">{renewPhone}</strong>.
-                </p>
-                <div className={`rounded-xl p-4 text-left space-y-2 ${
-                  renewPaymentMethod === 'mpesa' ? 'bg-[#00A550]/10 border border-[#00A550]/20' : 'bg-[#E40000]/10 border border-[#E40000]/20'
-                }`}>
-                  <p className="text-xs font-bold text-gray-700">
-                    Pay <span className={renewPaymentMethod === 'mpesa' ? 'text-[#00A550]' : 'text-[#E40000]'}>
-                      KSh {renewAmount.toLocaleString()}
-                    </span> for {renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType}
-                  </p>
-                  <p className="text-xs text-gray-500">Enter your PIN on your phone to complete payment.</p>
-                  <p className="text-xs text-gray-400">Waiting for confirmation… this usually takes a few seconds.</p>
-                </div>
+                {renewPaymentMethod === 'pesapal' ? (
+                  <>
+                    <div className="w-14 h-14 flex items-center justify-center bg-[#1a1a2e]/10 rounded-full mx-auto">
+                      <div className="w-8 h-8 border-2 border-[#1a1a2e] border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <p className="font-bold text-gray-900">Complete Payment in New Tab</p>
+                    <p className="text-sm text-gray-500">A Pesapal payment page has opened in a new tab. Complete your payment there, then come back here.</p>
+                    <div className="bg-[#1a1a2e]/10 border border-[#1a1a2e]/20 rounded-xl p-4 text-left space-y-2">
+                      <p className="text-xs font-bold text-gray-700">KSh {renewAmount.toLocaleString()} · {renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType}</p>
+                      <p className="text-xs text-gray-400">This page will update automatically once payment is confirmed.</p>
+                    </div>
+                    <button
+                      onClick={handlePesapalRenew}
+                      className="w-full text-sm font-semibold text-[#1a1a2e] border border-[#1a1a2e]/30 py-2.5 rounded-xl hover:bg-[#1a1a2e]/5 transition-colors cursor-pointer"
+                    >
+                      <i className="ri-external-link-line mr-1"></i>Reopen Payment Page
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className={`w-14 h-14 flex items-center justify-center rounded-full mx-auto ${
+                      renewPaymentMethod === 'mpesa' ? 'bg-[#00A550]/10' : 'bg-[#E40000]/10'
+                    }`}>
+                      <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <p className="font-bold text-gray-900">Check Your Phone</p>
+                    <p className="text-sm text-gray-500">
+                      A {renewPaymentMethod === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} prompt has been sent to{' '}
+                      <strong className="text-gray-900">{renewPhone}</strong>.
+                    </p>
+                    <div className={`rounded-xl p-4 text-left space-y-2 ${
+                      renewPaymentMethod === 'mpesa' ? 'bg-[#00A550]/10 border border-[#00A550]/20' : 'bg-[#E40000]/10 border border-[#E40000]/20'
+                    }`}>
+                      <p className="text-xs font-bold text-gray-700">
+                        Pay <span className={renewPaymentMethod === 'mpesa' ? 'text-[#00A550]' : 'text-[#E40000]'}>
+                          KSh {renewAmount.toLocaleString()}
+                        </span> for {renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType}
+                      </p>
+                      <p className="text-xs text-gray-500">Enter your PIN on your phone to complete payment.</p>
+                      <p className="text-xs text-gray-400">Waiting for confirmation… this usually takes a few seconds.</p>
+                    </div>
+                  </>
+                )}
                 {renewError && (
                   <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">{renewError}</p>
                 )}
@@ -1345,7 +1415,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {renewStep !== 'account' && (
-                      <button onClick={() => setRenewStep(renewStep === 'months' ? 'account' : renewStep === 'method' ? 'months' : renewStep === 'mpesa' ? 'method' : renewStep === 'airtel' ? 'method' : 'account')} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                      <button onClick={() => setRenewStep(renewStep === 'months' ? 'account' : renewStep === 'method' ? 'months' : renewStep === 'mpesa' ? 'method' : renewStep === 'airtel' ? 'method' : renewStep === 'pesapal' ? 'method' : 'account')} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer">
                         <i className="ri-arrow-left-s-line text-gray-600"></i>
                       </button>
                     )}
@@ -1355,6 +1425,7 @@ export default function ProfilePage() {
                       {renewStep === 'method' && 'Payment Method'}
                       {renewStep === 'mpesa' && 'Pay via M-Pesa'}
                       {renewStep === 'airtel' && 'Pay via Airtel Money'}
+                      {renewStep === 'pesapal' && 'Pay via Pesapal'}
                     </h2>
                   </div>
                   <button onClick={() => setShowRenew(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer">
@@ -1458,37 +1529,87 @@ export default function ProfilePage() {
                     <p className="text-xs text-gray-400">Total: <strong className="text-gray-900">KSh {renewAmount.toLocaleString()}</strong> for {renewMonths} month{renewMonths > 1 ? 's' : ''}</p>
                     <button
                       onClick={() => { setRenewStep('mpesa'); setRenewPaymentMethod('mpesa'); setRenewError(''); }}
-                      className="w-full flex items-center gap-3 bg-[#00A550] hover:bg-[#008f45] text-white font-bold text-sm px-4 py-4 rounded-xl transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-3 bg-gray-100 text-gray-400 font-bold text-sm px-4 py-4 rounded-xl cursor-not-allowed relative"
+                      disabled
                     >
                       <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
-                        <img src="https://i.postimg.cc/nrmPqSKD/mpesa-seeklogo.png" alt="M-Pesa" className="w-8 h-auto object-contain" />
+                        <img src="https://i.postimg.cc/nrmPqSKD/mpesa-seeklogo.png" alt="M-Pesa" className="w-8 h-auto object-contain opacity-40" />
                       </div>
                       <div className="text-left flex-1">
                         <p className="font-bold text-base">M-Pesa</p>
-                        <p className="text-xs text-white/80">Safaricom M-Pesa · Enter PIN on your phone</p>
+                        <p className="text-xs text-gray-400">Coming soon</p>
                       </div>
-                      <i className="ri-arrow-right-s-line text-xl"></i>
+                      <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Soon</span>
                     </button>
                     <button
                       onClick={() => { setRenewStep('airtel'); setRenewPaymentMethod('airtel'); setRenewError(''); }}
-                      className="w-full flex items-center gap-3 bg-[#E40000] hover:bg-[#cc0000] text-white font-bold text-sm px-4 py-4 rounded-xl transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-3 bg-gray-100 text-gray-400 font-bold text-sm px-4 py-4 rounded-xl cursor-not-allowed relative"
+                      disabled
                     >
                       <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
-                        <img src="https://i.postimg.cc/VLc73RBp/airtel-money-tanzania-seeklogo.png" alt="Airtel Money" className="w-8 h-auto object-contain" />
+                        <img src="https://i.postimg.cc/VLc73RBp/airtel-money-tanzania-seeklogo.png" alt="Airtel Money" className="w-8 h-auto object-contain opacity-40" />
                       </div>
                       <div className="text-left flex-1">
                         <p className="font-bold text-base">Airtel Money</p>
-                        <p className="text-xs text-white/80">Airtel Money Kenya · Enter PIN on your phone</p>
+                        <p className="text-xs text-gray-400">Coming soon</p>
                       </div>
-                      <i className="ri-arrow-right-s-line text-xl"></i>
+                      <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Soon</span>
+                    </button>
+                    <button
+                      onClick={() => { setRenewStep('pesapal'); setRenewPaymentMethod('pesapal'); setRenewError(''); }}
+                      className="w-full flex items-center gap-3 bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-900 font-bold text-sm px-4 py-4 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
+                        <img src="https://i.postimg.cc/qMVd9KMK/pesapal-logo.png" alt="Pesapal" className="w-8 h-auto object-contain" />
+                      </div>
+                      <div className="text-left flex-1">
+                        <p className="font-bold text-base">Pesapal</p>
+                        <p className="text-xs text-gray-500">Card, M-Pesa, Airtel · Secure checkout</p>
+                      </div>
+                      <i className="ri-arrow-right-s-line text-xl text-gray-400"></i>
                     </button>
                     <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-1">
                       <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5"><i className="ri-information-line text-emerald-500"></i> How it works</p>
-                      <p className="text-xs text-gray-400">1. Select M-Pesa or Airtel Money below</p>
-                      <p className="text-xs text-gray-400">2. Enter the phone number registered to your mobile money</p>
-                      <p className="text-xs text-gray-400">3. A payment prompt appears on your phone</p>
-                      <p className="text-xs text-gray-400">4. Enter your PIN to confirm — done!</p>
+                      <p className="text-xs text-gray-400">1. Click Pesapal below to open the secure payment page</p>
+                      <p className="text-xs text-gray-400">2. Pay via M-Pesa, Airtel or card on Pesapal's page</p>
+                      <p className="text-xs text-gray-400">3. Come back here — your account renews automatically</p>
                     </div>
+                  </div>
+                )}
+
+                {/* STEP 4b — Pesapal redirect */}
+                {renewStep === 'pesapal' && (
+                  <div className="space-y-4">
+                    <div className="bg-[#1a1a2e]/10 border border-[#1a1a2e]/20 rounded-xl p-3">
+                      <p className="text-xs font-bold text-gray-700">Amount: <span className="text-[#1a1a2e]">KSh {renewAmount.toLocaleString()}</span></p>
+                      <p className="text-xs text-gray-500 mt-0.5">{renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType} account</p>
+                    </div>
+                    {renewError && (
+                      <p className="text-xs text-rose-500 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{renewError}</p>
+                    )}
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-1">
+                      <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5"><i className="ri-information-line text-emerald-500"></i> How Pesapal works</p>
+                      <p className="text-xs text-gray-400">1. Click the button below — a new tab opens</p>
+                      <p className="text-xs text-gray-400">2. Complete payment on the Pesapal page (card, M-Pesa, etc.)</p>
+                      <p className="text-xs text-gray-400">3. Come back here — your account renews automatically</p>
+                    </div>
+                    <button
+                      onClick={handlePesapalRenew}
+                      disabled={renewing}
+                      className={`w-full font-bold text-sm py-4 rounded-xl transition-all bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-900 shadow-sm ${renewing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      {renewing ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
+                          Opening Pesapal...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <i className="ri-external-link-line"></i>
+                          Pay KSh {renewAmount.toLocaleString()} via Pesapal
+                        </span>
+                      )}
+                    </button>
                   </div>
                 )}
 
