@@ -36,6 +36,22 @@ type PendingRequest = {
 
 const accountTypes = ['landlord', 'airbnb', 'hotel', 'shop', 'marketplace', 'service', 'entertainment'];
 
+type RenewalTransaction = {
+  id: string;
+  user_name: string;
+  user_email: string;
+  phone: string | null;
+  payment_method: string;
+  status: 'pending' | 'paid' | 'failed' | 'cancelled';
+  amount: number;
+  months: number;
+  account_type: string;
+  mpesa_receipt: string | null;
+  paid_at: string | null;
+  failure_reason: string | null;
+  created_at: string;
+};
+
 type Report = {
   id: string;
   listing_id: string;
@@ -62,7 +78,7 @@ const emptyMarketerForm = { name: '', email: '', password: '', phone: '' };
 const SUPER_ADMIN_EMAIL = 'kellyoburuodhiambo@yahoo.com';
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<'users' | 'marketers' | 'admins' | 'requests' | 'reports' | 'listings'>('users');
+  const [tab, setTab] = useState<'users' | 'marketers' | 'admins' | 'requests' | 'reports' | 'listings' | 'transactions'>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [marketers, setMarketers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +112,9 @@ export default function AdminPage() {
   const [deletingListingId, setDeletingListingId] = useState<string | null>(null);
   const [pendingListings, setPendingListings] = useState<any[]>([]);
   const [approvingListingId, setApprovingListingId] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<RenewalTransaction[]>([]);
+  const [txSearch, setTxSearch] = useState('');
+  const [txStatusFilter, setTxStatusFilter] = useState<'all' | 'paid' | 'pending' | 'failed' | 'cancelled'>('all');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -113,6 +132,7 @@ export default function AdminPage() {
       fetchRequests();
       fetchReports();
       fetchPendingListings();
+      fetchTransactions();
       if (email === SUPER_ADMIN_EMAIL) fetchAdmins();
     };
     check();
@@ -166,6 +186,15 @@ export default function AdminPage() {
       .select('id, listing_id, reason, created_at, listings(id, title, listing_type), users!reports_reporter_id_fkey(id, name, email)')
       .order('created_at', { ascending: false });
     setReports((data as unknown as Report[]) || []);
+  };
+
+  const fetchTransactions = async () => {
+    const { data } = await supabaseAdmin
+      .from('renewal_requests')
+      .select('id, user_name, user_email, phone, payment_method, status, amount, months, account_type, mpesa_receipt, paid_at, failure_reason, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    setTransactions((data as RenewalTransaction[]) || []);
   };
 
   const fetchPendingListings = async () => {
@@ -480,7 +509,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-2 bg-white border border-gray-100 rounded-xl p-1 overflow-x-auto">
-          {(['users', 'marketers', 'requests', 'listings', 'reports', ...(isSuperAdmin ? ['admins'] : [])] as const).map(t => (
+          {(['users', 'marketers', 'requests', 'listings', 'reports', 'transactions', ...(isSuperAdmin ? ['admins'] : [])] as const).map(t => (
             <button key={t} onClick={() => { setTab(t as any); setShowCreate(false); }}
               className={`flex-1 text-sm font-semibold py-2 rounded-lg transition-colors cursor-pointer capitalize whitespace-nowrap ${
                 tab === t ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:text-gray-700'
@@ -490,6 +519,7 @@ export default function AdminPage() {
                t === 'requests' ? `Requests (${requests.filter(r => r.status === 'pending').length})` :
                t === 'listings' ? `Listings (${pendingListings.length})` :
                t === 'reports' ? `Reports (${reports.length})` :
+               t === 'transactions' ? `Transactions (${transactions.filter(tx => tx.status === 'paid').length})` :
                `Admins (${admins.length})`}
             </button>
           ))}
@@ -979,6 +1009,83 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+
+        {/* TRANSACTIONS TAB */}
+        {tab === 'transactions' && (() => {
+          const txFiltered = transactions
+            .filter(tx => txStatusFilter === 'all' || tx.status === txStatusFilter)
+            .filter(tx =>
+              !txSearch ||
+              tx.user_name?.toLowerCase().includes(txSearch.toLowerCase()) ||
+              tx.user_email?.toLowerCase().includes(txSearch.toLowerCase()) ||
+              tx.mpesa_receipt?.toLowerCase().includes(txSearch.toLowerCase()) ||
+              tx.account_type?.toLowerCase().includes(txSearch.toLowerCase())
+            );
+          const totalRevenue = transactions.filter(tx => tx.status === 'paid').reduce((s, tx) => s + (tx.amount || 0), 0);
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+                  <p className="text-xs text-gray-400">Total Revenue</p>
+                  <p className="text-lg font-bold text-emerald-600">KSh {totalRevenue.toLocaleString()}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+                  <p className="text-xs text-gray-400">Completed</p>
+                  <p className="text-lg font-bold text-gray-900">{transactions.filter(tx => tx.status === 'paid').length}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+                  <p className="text-xs text-gray-400">All Records</p>
+                  <p className="text-lg font-bold text-gray-900">{transactions.length}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {(['all', 'paid', 'pending', 'failed'] as const).map(s => (
+                  <button key={s} onClick={() => setTxStatusFilter(s)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer capitalize ${
+                      txStatusFilter === s ? 'bg-emerald-600 text-white border-emerald-600' : 'text-gray-500 border-gray-200 hover:border-gray-300'
+                    }`}>{s}</button>
+                ))}
+                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 flex-1 min-w-40">
+                  <i className="ri-search-line text-gray-400 text-xs"></i>
+                  <input value={txSearch} onChange={e => setTxSearch(e.target.value)} placeholder="Search name, email, receipt..." className="text-xs outline-none bg-transparent flex-1 text-gray-700" />
+                  {txSearch && <button onClick={() => setTxSearch('')} className="text-gray-400 cursor-pointer"><i className="ri-close-line text-xs"></i></button>}
+                </div>
+              </div>
+              {txFiltered.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400 text-sm">No transactions found</div>
+              ) : txFiltered.map(tx => (
+                <div key={tx.id} className={`bg-white rounded-2xl border p-4 ${
+                  tx.status === 'paid' ? 'border-emerald-100' :
+                  tx.status === 'failed' ? 'border-rose-100' : 'border-amber-100'
+                }`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-gray-900 text-sm">{tx.user_name || '—'}</p>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                          tx.status === 'paid' ? 'bg-emerald-100 text-emerald-600' :
+                          tx.status === 'failed' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'
+                        }`}>{tx.status}</span>
+                        <span className="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full capitalize">{tx.payment_method}</span>
+                      </div>
+                      <p className="text-xs text-gray-400">{tx.user_email}</p>
+                      {tx.phone && <p className="text-xs text-gray-400">{tx.phone}</p>}
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        <span className="text-xs font-semibold text-emerald-700">KSh {tx.amount?.toLocaleString()}</span>
+                        <span className="text-xs text-gray-400 capitalize">{tx.account_type} · {tx.months} month{tx.months !== 1 ? 's' : ''}</span>
+                      </div>
+                      {tx.mpesa_receipt && <p className="text-xs text-gray-500 mt-0.5"><i className="ri-receipt-line mr-1"></i>{tx.mpesa_receipt}</p>}
+                      {tx.failure_reason && <p className="text-xs text-rose-400 mt-0.5 truncate">{tx.failure_reason}</p>}
+                      <p className="text-[10px] text-gray-300 mt-1">
+                        {tx.paid_at ? new Date(tx.paid_at).toLocaleString('en-KE') : new Date(tx.created_at).toLocaleString('en-KE')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* MARKETERS TAB */}
         {tab === 'marketers' && (
