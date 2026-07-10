@@ -11,6 +11,7 @@ import MarketplaceSection from './components/MarketplaceSection';
 import TrustSafety from './components/TrustSafety';
 import EntertainmentSection from './components/EntertainmentSection';
 import TestimonialsSection from './components/TestimonialsSection';
+import PartnersSection from './components/PartnersSection';
 
 export default function Home() {
   return (
@@ -31,6 +32,7 @@ export default function Home() {
         <TrustSafety />
         <TestimonialsSection />
         <EntertainmentSection />
+        <PartnersSection />
       </main>
       <Footer />
       {/* Mobile bottom nav spacer */}
