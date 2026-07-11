@@ -134,7 +134,7 @@ export default function Footer() {
               <a href="#company" className="hover:text-emerald-600 transition-colors">Company</a>
             </h4>
             <ul className="space-y-2">
-{['About Nyumbani Hub', 'How It Works', 'Anti-Scam Policy', 'List Your Property', 'Pricing', 'Contact Us'].map((item) => (
+{['About Nyumbani Link', 'How It Works', 'Anti-Scam Policy', 'List Your Property', 'Pricing', 'Contact Us'].map((item) => (
   <li key={item}>
     {item === 'Anti-Scam Policy' ? (
       <Link to="/anti-scam" className="text-gray-500 hover:text-emerald-600 text-sm transition-colors">{item}</Link>

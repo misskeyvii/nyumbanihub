@@ -42,7 +42,7 @@ export default function SignUpPage() {
           {/* Heading */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-              Join Nyumbani Hub
+              Join Nyumbani Link
             </h1>
             <p className="text-gray-500 text-sm mt-2 leading-relaxed">
               Browse verified listings, save favorites,<br />and connect with service providers.
