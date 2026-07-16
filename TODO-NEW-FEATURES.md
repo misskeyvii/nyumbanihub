@@ -24,3 +24,10 @@ pending_requests: id, user_id, user_email, status(pending/approved/rejected), cr
 messages: id, from_user_id, to_user_id, listing_id, message, created_at
 ```
 **Ready to start with signup page?**
+
+
+no cookies consent loading google analytrics without asking firs
+no terms of services
+exposed user data
+
+

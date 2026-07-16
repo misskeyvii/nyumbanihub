@@ -158,7 +158,7 @@ export default function Footer() {
       <div className="border-t border-gray-200 px-4 md:px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-gray-400 text-xs text-center sm:text-left">
-            © 2026 Nyumbani Hub Kenya. All rights reserved. Trusted verified listings platform.
+            © 2026 Nyumbani Link Kenya. All rights reserved. Trusted verified listings platform.
           </p>
           <div className="flex items-center gap-4">
 <Link to="/privacy" className="text-gray-400 hover:text-gray-600 text-xs transition-colors">Privacy Policy</Link>

@@ -255,6 +255,8 @@ export default function AdminPage() {
       .update({
         account_type: nextAccountType,
         extra_account_types: nextExtras,
+        is_active: true,
+        business_name: req.business_name,
         ...(req.phone && { phone: req.phone }),
         ...(req.county && { county: req.county }),
         ...(normalizedSubcategory && { subcategory: normalizedSubcategory }),

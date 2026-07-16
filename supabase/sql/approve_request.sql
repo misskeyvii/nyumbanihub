@@ -33,13 +33,15 @@ BEGIN
   IF u.account_type IS NULL OR u.account_type = '' THEN
     UPDATE public.users
     SET account_type = pr.account_type,
+        is_active = true,
         subscription_expires_at = expires_at,
         subscription_details = COALESCE(u.subscription_details, '{}'::jsonb)
           || jsonb_build_object(pr.account_type, expires_at::text)
     WHERE id = u.id;
   ELSE
     UPDATE public.users
-    SET extra_account_types = (
+    SET is_active = true,
+        extra_account_types = (
         SELECT CASE WHEN array_position(coalesce(u.extra_account_types, '{}'), pr.account_type) IS NULL
           THEN array_append(coalesce(u.extra_account_types, '{}'), pr.account_type)
           ELSE coalesce(u.extra_account_types, '{}') END
