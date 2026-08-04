@@ -88,6 +88,9 @@ export default function Navbar() {
               <Link to="/how-it-works" className={`text-sm font-medium hover:text-emerald-600 transition-colors ${textColor}`}>
                 How It Works
               </Link>
+              <Link to="/jobs" className={`text-sm font-medium hover:text-emerald-600 transition-colors ${textColor}`}>
+                Jobs
+              </Link>
             </div>
 
             {/* Desktop CTA */}
@@ -188,7 +191,7 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {menuOpen && (
           <div className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3">
-            {['Home', 'Explore', 'Marketplace', 'Services', 'Entertainment', 'How It Works'].map((item) => (
+            {['Home', 'Explore', 'Marketplace', 'Services', 'Entertainment', 'How It Works', 'Jobs'].map((item) => (
               <Link
                 key={item}
                 to={`/${item === 'Home' ? '' : item.toLowerCase().replace(' ', '-')}`}

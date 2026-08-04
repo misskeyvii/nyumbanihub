@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 const navItems = [
   { label: 'Home', icon: 'ri-home-5-line', activeIcon: 'ri-home-5-fill', path: '/' },
   { label: 'Explore', icon: 'ri-compass-3-line', activeIcon: 'ri-compass-3-fill', path: '/explore' },
+  { label: 'Jobs', icon: 'ri-briefcase-line', activeIcon: 'ri-briefcase-fill', path: '/jobs' },
   { label: 'Services', icon: 'ri-customer-service-2-line', activeIcon: 'ri-customer-service-2-fill', path: '/services' },
   { label: 'Post', icon: 'ri-add-circle-line', activeIcon: 'ri-add-circle-fill', path: '/post-listing', locked: true },
 ];

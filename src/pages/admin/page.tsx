@@ -78,7 +78,9 @@ const emptyMarketerForm = { name: '', email: '', password: '', phone: '' };
 const SUPER_ADMIN_EMAIL = 'kellyoburuodhiambo@yahoo.com';
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<'users' | 'marketers' | 'admins' | 'requests' | 'reports' | 'listings' | 'transactions'>('users');
+  const [tab, setTab] = useState<'users' | 'marketers' | 'admins' | 'requests' | 'reports' | 'listings' | 'transactions' | 'jobs'>('users');
+  const [jobApplications, setJobApplications] = useState<{ id: string; full_name: string; phone: string; email: string; position: string; department: string; cv_url: string | null; created_at: string }[]>([]);
+  const [jobSearch, setJobSearch] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [marketers, setMarketers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,6 +135,7 @@ export default function AdminPage() {
       fetchReports();
       fetchPendingListings();
       fetchTransactions();
+      fetchJobApplications();
       if (email === SUPER_ADMIN_EMAIL) fetchAdmins();
     };
     check();
@@ -195,6 +198,14 @@ export default function AdminPage() {
       .order('created_at', { ascending: false })
       .limit(200);
     setTransactions((data as RenewalTransaction[]) || []);
+  };
+
+  const fetchJobApplications = async () => {
+    const { data } = await supabaseAdmin
+      .from('job_applications')
+      .select('id, full_name, phone, email, position, department, cv_url, created_at')
+      .order('created_at', { ascending: false });
+    setJobApplications(data || []);
   };
 
   const fetchPendingListings = async () => {
@@ -511,7 +522,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-2 bg-white border border-gray-100 rounded-xl p-1 overflow-x-auto">
-          {(['users', 'marketers', 'requests', 'listings', 'reports', 'transactions', ...(isSuperAdmin ? ['admins'] : [])] as const).map(t => (
+          {(['users', 'marketers', 'requests', 'listings', 'reports', 'transactions', 'jobs', ...(isSuperAdmin ? ['admins'] : [])] as const).map(t => (
             <button key={t} onClick={() => { setTab(t as any); setShowCreate(false); }}
               className={`flex-1 text-sm font-semibold py-2 rounded-lg transition-colors cursor-pointer capitalize whitespace-nowrap ${
                 tab === t ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:text-gray-700'
@@ -522,6 +533,7 @@ export default function AdminPage() {
                t === 'listings' ? `Listings (${pendingListings.length})` :
                t === 'reports' ? `Reports (${reports.length})` :
                t === 'transactions' ? `Transactions (${transactions.filter(tx => tx.status === 'paid').length})` :
+               t === 'jobs' ? `Jobs (${jobApplications.length})` :
                `Admins (${admins.length})`}
             </button>
           ))}
@@ -1088,6 +1100,51 @@ export default function AdminPage() {
             </div>
           );
         })()}
+
+        {/* JOBS TAB */}
+        {tab === 'jobs' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5">
+              <i className="ri-search-line text-gray-400 text-sm"></i>
+              <input value={jobSearch} onChange={e => setJobSearch(e.target.value)} placeholder="Search by name, email or position..." className="text-sm outline-none bg-transparent flex-1 text-gray-700" />
+              {jobSearch && <button onClick={() => setJobSearch('')} className="text-gray-400 cursor-pointer"><i className="ri-close-line text-sm"></i></button>}
+            </div>
+            {jobApplications.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400 text-sm">No applications yet</div>
+            ) : jobApplications
+              .filter(a =>
+                !jobSearch ||
+                a.full_name?.toLowerCase().includes(jobSearch.toLowerCase()) ||
+                a.email?.toLowerCase().includes(jobSearch.toLowerCase()) ||
+                a.position?.toLowerCase().includes(jobSearch.toLowerCase()) ||
+                a.department?.toLowerCase().includes(jobSearch.toLowerCase())
+              )
+              .map(a => (
+                <div key={a.id} className="bg-white rounded-2xl border border-gray-100 p-4 space-y-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm">{a.full_name}</p>
+                      <p className="text-xs text-gray-400">{a.email} · {a.phone}</p>
+                      <p className="text-xs text-emerald-700 font-medium mt-1">{a.position}</p>
+                      <p className="text-xs text-gray-400">{a.department}</p>
+                      <p className="text-[10px] text-gray-300 mt-1">{new Date(a.created_at).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                    {a.cv_url && (
+                      <a
+                        href={a.cv_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-shrink-0 text-xs font-semibold text-sky-600 border border-sky-200 px-3 py-1.5 rounded-lg hover:bg-sky-50 transition-colors whitespace-nowrap"
+                      >
+                        <i className="ri-file-download-line mr-1"></i>View CV
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
 
         {/* MARKETERS TAB */}
         {tab === 'marketers' && (

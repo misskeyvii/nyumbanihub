@@ -27,6 +27,7 @@ const EditListingPage   = lazy(() => import('../pages/edit-listing/page'));
 const ContactPage       = lazy(() => import('../pages/contact/page'));
 const ProviderProfilePage = lazy(() => import('../pages/provider/[id]/page'));
 const HouseHuntingPage  = lazy(() => import('../pages/house-hunting/page'));
+const JobsPage          = lazy(() => import('../pages/jobs/page'));
 
 const wrap = (el: React.ReactElement) => (
   <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><span className="text-emerald-600 text-sm">Loading...</span></div>}>
@@ -65,6 +66,7 @@ const routes: RouteObject[] = [
   { path: '/anti-scam',               element: wrap(<AntiScamPage />) },
   { path: '/edit-listing/:id',        element: wrap(<EditListingPage />) },
   { path: '/contact',                 element: wrap(<ContactPage />) },
+  { path: '/jobs',                    element: wrap(<JobsPage />) },
   { path: '/provider/:id',            element: wrap(<ProviderProfilePage />) },
   { path: '*',                        element: <NotFound /> },
 ];
