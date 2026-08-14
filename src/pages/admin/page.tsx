@@ -27,6 +27,7 @@ type PendingRequest = {
   business_name: string;
   account_type: string;
   subcategory: string | null;
+  lister_type: string | null;
   phone: string | null;
   county: string | null;
   message: string | null;
@@ -271,6 +272,7 @@ export default function AdminPage() {
         ...(req.phone && { phone: req.phone }),
         ...(req.county && { county: req.county }),
         ...(normalizedSubcategory && { subcategory: normalizedSubcategory }),
+        ...(req.lister_type && { lister_type: req.lister_type }),
         subscription_expires_at: expiresStr,
         subscription_details: newDetails,
         has_notification: true,
@@ -891,7 +893,23 @@ export default function AdminPage() {
                     <p className="text-xs text-gray-400">{req.user_name} · {req.user_email}</p>
                     {req.phone && <p className="text-xs text-gray-400">{req.phone}</p>}
                     {req.county && <p className="text-xs text-gray-400">{req.county}</p>}
-                    <p className="text-xs text-gray-500 capitalize mt-1">Type: <span className="font-semibold">{req.account_type}</span>{req.subcategory && <span className="ml-1 text-emerald-600">— {req.subcategory}</span>}</p>
+                    <div className="flex items-center gap-2 flex-wrap mt-1">
+                      <p className="text-xs text-gray-500 capitalize">Type: <span className="font-semibold">{req.account_type}</span>{req.subcategory && <span className="ml-1 text-emerald-600">— {req.subcategory}</span>}</p>
+                      {req.lister_type && (
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                          req.lister_type === 'agent' ? 'bg-sky-100 text-sky-700' :
+                          req.lister_type === 'caretaker' ? 'bg-violet-100 text-violet-700' :
+                          'bg-emerald-100 text-emerald-700'
+                        }`}>
+                          <i className={`text-[11px] ${
+                            req.lister_type === 'agent' ? 'ri-user-star-line' :
+                            req.lister_type === 'caretaker' ? 'ri-key-2-line' :
+                            'ri-home-4-line'
+                          }`}></i>
+                          {req.lister_type}
+                        </span>
+                      )}
+                    </div>
                     {req.message && <p className="text-xs text-gray-400 mt-1 italic">"{req.message}"</p>}
                     <p className="text-[10px] text-gray-300 mt-1">{new Date(req.created_at).toLocaleDateString()}</p>
                   </div>

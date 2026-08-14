@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [removingFavId, setRemovingFavId] = useState<string | null>(null);
   const REQUEST_ACCOUNT_TYPES = ['landlord', 'airbnb', 'hotel', 'shop', 'marketplace', 'service', 'entertainment'];
-  const [requestForm, setRequestForm] = useState({ business_name: '', account_type: '', phone: '', county: '', message: '', subcategory: '' });
+  const [requestForm, setRequestForm] = useState({ business_name: '', account_type: '', phone: '', county: '', message: '', subcategory: '', lister_type: '' });
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [requestError, setRequestError] = useState('');
@@ -414,6 +414,7 @@ export default function ProfilePage() {
       business_name: requestForm.business_name,
       account_type: requestForm.account_type,
       subcategory: requestForm.subcategory || null,
+      lister_type: requestForm.lister_type || null,
       phone: requestForm.phone || null,
       county: requestForm.county || null,
       message: requestForm.message || null,
@@ -427,7 +428,7 @@ export default function ProfilePage() {
       status: 'pending',
       created_at: new Date().toISOString(),
     }, ...prev]);
-    setRequestForm({ business_name: '', account_type: '', phone: '', county: '', message: '', subcategory: '' });
+    setRequestForm({ business_name: '', account_type: '', phone: '', county: '', message: '', subcategory: '', lister_type: '' });
     setRequestSuccess(true);
     setSubmittingRequest(false);
   };
@@ -1043,11 +1044,61 @@ export default function ProfilePage() {
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-gray-500 block mb-1.5">Account Type *</label>
-                      <select value={requestForm.account_type} onChange={e => setRequestForm({ ...requestForm, account_type: e.target.value, subcategory: '' })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
+                      <select value={requestForm.account_type} onChange={e => setRequestForm({ ...requestForm, account_type: e.target.value, subcategory: '', lister_type: '' })} className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 bg-white cursor-pointer">
                         <option value="">Select type</option>
-                        {REQUEST_ACCOUNT_TYPES.filter(t => !approvedTypes.includes(t) && !reactivatableTypes.includes(t)).map(t => <option key={t} value={t}>{t}</option>)}
+                        {REQUEST_ACCOUNT_TYPES.filter(t => !approvedTypes.includes(t) && !reactivatableTypes.includes(t)).map(t => (
+                          <option key={t} value={t}>{
+                            t === 'landlord' ? 'Landlord / Apartments & Homes' :
+                            t === 'airbnb' ? 'Airbnb Stay' :
+                            t === 'hotel' ? 'Hotel / Lodge' :
+                            t === 'shop' ? 'Shop / Business' :
+                            t === 'marketplace' ? 'Marketplace Product' :
+                            t === 'service' ? 'Service Provider' :
+                            t === 'entertainment' ? 'Entertainment' :
+                            t.charAt(0).toUpperCase() + t.slice(1)
+                          }</option>
+                        ))}
                       </select>
+                      {requestForm.account_type === 'landlord' && (
+                        <p className="text-[11px] text-emerald-700 mt-1.5 flex items-center gap-1">
+                          <i className="ri-information-line"></i>
+                          This lets you post both <strong>Apartments</strong> and <strong>Home / Rental</strong> listings.
+                        </p>
+                      )}
                     </div>
+                    {/* Lister type — only for landlord/home/apartment posters */}
+                    {(requestForm.account_type === 'landlord' || requestForm.account_type === 'airbnb' || requestForm.account_type === 'hotel') && (
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 block mb-1.5">I am a... *</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(['landlord', 'agent', 'caretaker'] as const).map(lt => (
+                            <button
+                              key={lt}
+                              type="button"
+                              onClick={() => setRequestForm({ ...requestForm, lister_type: lt })}
+                              className={`py-2.5 rounded-xl border-2 text-xs font-semibold capitalize transition-all cursor-pointer ${
+                                requestForm.lister_type === lt
+                                  ? lt === 'agent' ? 'border-sky-500 bg-sky-50 text-sky-700'
+                                    : lt === 'caretaker' ? 'border-violet-500 bg-violet-50 text-violet-700'
+                                    : 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                              }`}
+                            >
+                              {lt === 'agent' && <i className="ri-user-star-line block text-base mb-0.5"></i>}
+                              {lt === 'landlord' && <i className="ri-home-4-line block text-base mb-0.5"></i>}
+                              {lt === 'caretaker' && <i className="ri-key-2-line block text-base mb-0.5"></i>}
+                              {lt}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-1.5">
+                          {requestForm.lister_type === 'agent' && 'Agents represent multiple properties and may charge a viewing fee.'}
+                          {requestForm.lister_type === 'landlord' && 'Landlords own the property directly.'}
+                          {requestForm.lister_type === 'caretaker' && 'Caretakers manage a property on behalf of the owner.'}
+                          {!requestForm.lister_type && 'This helps renters know who they\'re dealing with.'}
+                        </p>
+                      </div>
+                    )}
                     {requestForm.account_type === 'service' && (
                       <div>
                         <label className="text-xs font-semibold text-gray-500 block mb-1.5">Service Type *</label>

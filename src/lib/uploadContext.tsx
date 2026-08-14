@@ -45,7 +45,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     try {
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('account_type, extra_account_types, subscription_expires_at, subscription_details')
+        .select('account_type, extra_account_types, subscription_expires_at, subscription_details, lister_type')
         .eq('id', userId)
         .single();
 
@@ -96,6 +96,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
         whatsapp: form.whatsapp,
         images: imageUrls,
         map_url: form.map_url || null,
+        lister_type: userData.lister_type || null,
         status: 'live',
       });
 

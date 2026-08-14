@@ -65,13 +65,11 @@ export default function JobsPage() {
       const ext = form.cv.name.split('.').pop();
       const path = `cvs/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('job-applications').upload(path, form.cv);
-      if (uploadError) {
-        setError('CV upload failed: ' + uploadError.message);
-        setSubmitting(false);
-        return;
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('job-applications').getPublicUrl(path);
+        cvUrl = urlData.publicUrl;
       }
-      const { data: urlData } = supabase.storage.from('job-applications').getPublicUrl(path);
-      cvUrl = urlData.publicUrl;
+      // If upload fails (e.g. bucket not set up yet), continue without CV
     }
 
     const { error: dbError } = await supabase.from('job_applications').insert({

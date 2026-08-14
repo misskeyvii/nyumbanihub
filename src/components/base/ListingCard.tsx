@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import ListerBadge from './ListerBadge';
 
 interface ListingCardProps {
   listing: any;
@@ -110,9 +111,12 @@ export default function ListingCard({ listing, promoted = false }: ListingCardPr
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-emerald-700 font-bold text-sm">{price}</span>
-            {listing.phone && (
-              <span className="text-xs text-gray-400">{listing.phone}</span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {listing.lister_type && <ListerBadge type={listing.lister_type} size="sm" />}
+              {listing.phone && (
+                <span className="text-xs text-gray-400">{listing.phone}</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

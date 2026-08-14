@@ -5,6 +5,7 @@ import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import Footer from '../../components/feature/Footer';
 import { supabase } from '../../lib/supabase';
 import { createWhatsAppLink } from '../../lib/phone';
+import ListerBadge from '../../components/base/ListerBadge';
 
 const typeLabel: Record<string, string> = {
   home: 'Home & Rental', apartment: 'Apartment', airbnb: 'Airbnb Stay',
@@ -287,6 +288,11 @@ export default function ListingPage() {
                   <div>
                     <p className="text-white text-sm font-semibold">{ownerName || 'Owner'}</p>
                     {phone && <p className="text-emerald-200 text-xs">{phone}</p>}
+                    {listing.lister_type && (
+                      <div className="mt-1">
+                        <ListerBadge type={listing.lister_type} size="sm" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
