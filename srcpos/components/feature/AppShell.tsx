@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { branches } from '@/mocks/business';
-import { getDemoAccount, type DemoType, type Role } from '@/mocks/demoAccounts';
 import { getDemoType, getSession, clearSession } from '@/utils/session';
 import { supabase } from '@/utils/supabaseClient';
-import { hydrateSession } from '@/utils/auth';
+import { hydrateSession, signOut } from '@/utils/auth';
 
 interface NavItem {
   label: string;
@@ -13,93 +12,72 @@ interface NavItem {
 }
 
 const backOfficeNav: NavItem[] = [
-  { label: 'New Sale', icon: 'ri-shopping-cart-line', path: '/app/pos' },
-  { label: 'Products', icon: 'ri-price-tag-3-line', path: '/app/products' },
-  { label: 'Inventory', icon: 'ri-stack-line', path: '/app/inventory' },
-  { label: 'Customers', icon: 'ri-user-line', path: '/app/customers' },
-  { label: 'Suppliers', icon: 'ri-truck-line', path: '/app/suppliers' },
-  { label: 'Expenses', icon: 'ri-wallet-line', path: '/app/expenses' },
-  { label: 'Employees', icon: 'ri-team-line', path: '/app/employees' },
-  { label: 'Reports', icon: 'ri-bar-chart-line', path: '/app/reports' },
-  { label: 'Branches', icon: 'ri-store-2-line', path: '/app/branches' },
-  { label: 'Subscription', icon: 'ri-shield-check-line', path: '/app/subscription' },
-  { label: 'Settings', icon: 'ri-settings-3-line', path: '/app/settings' },
-  { label: 'Help & Support', icon: 'ri-question-line', path: '/app/help' },
+  { label: 'New Sale',     icon: 'ri-shopping-cart-line',  path: '/app/pos' },
+  { label: 'Products',     icon: 'ri-price-tag-3-line',    path: '/app/products' },
+  { label: 'Inventory',    icon: 'ri-stack-line',           path: '/app/inventory' },
+  { label: 'Customers',    icon: 'ri-user-line',            path: '/app/customers' },
+  { label: 'Suppliers',    icon: 'ri-truck-line',           path: '/app/suppliers' },
+  { label: 'Expenses',     icon: 'ri-wallet-line',          path: '/app/expenses' },
+  { label: 'Employees',    icon: 'ri-team-line',            path: '/app/employees' },
+  { label: 'Reports',      icon: 'ri-bar-chart-line',       path: '/app/reports' },
+  { label: 'Branches',     icon: 'ri-store-2-line',         path: '/app/branches' },
+  { label: 'Subscription', icon: 'ri-shield-check-line',    path: '/app/subscription' },
+  { label: 'Settings',     icon: 'ri-settings-3-line',      path: '/app/settings' },
+  { label: 'Help & Support', icon: 'ri-question-line',      path: '/app/help' },
 ];
 
-const shopNav: NavItem[] = [
-  { label: 'Dashboard', icon: 'ri-dashboard-line', path: '/app/dashboard' },
-  ...backOfficeNav,
-];
-
-const hotelNav: NavItem[] = [
-  { label: 'Hotel Dashboard', icon: 'ri-hotel-bed-line', path: '/app/hotel' },
-  ...backOfficeNav,
-];
-
-const airbnbNav: NavItem[] = [
-  { label: 'Airbnb Dashboard', icon: 'ri-home-5-line', path: '/app/airbnb' },
-  ...backOfficeNav,
-];
-
-const marketplaceNav: NavItem[] = [
-  { label: 'Marketplace Dashboard', icon: 'ri-store-3-line', path: '/app/marketplace' },
-  ...backOfficeNav,
-];
-
-const homesNav: NavItem[] = [
-  { label: 'Homes Dashboard', icon: 'ri-building-2-line', path: '/app/homes' },
-  ...backOfficeNav,
-];
+const shopNav: NavItem[]        = [{ label: 'Dashboard',           icon: 'ri-dashboard-line',     path: '/app/dashboard' },    ...backOfficeNav];
+const hotelNav: NavItem[]       = [{ label: 'Hotel Dashboard',     icon: 'ri-hotel-bed-line',     path: '/app/hotel' },        ...backOfficeNav];
+const airbnbNav: NavItem[]      = [{ label: 'Airbnb Dashboard',    icon: 'ri-home-5-line',        path: '/app/airbnb' },       ...backOfficeNav];
+const marketplaceNav: NavItem[] = [{ label: 'Marketplace Dashboard', icon: 'ri-store-3-line',     path: '/app/marketplace' },  ...backOfficeNav];
+const homesNav: NavItem[]       = [{ label: 'Homes Dashboard',     icon: 'ri-building-2-line',    path: '/app/homes' },        ...backOfficeNav];
 
 const staffNav: NavItem[] = [
-  { label: 'New Sale', icon: 'ri-shopping-cart-line', path: '/app/pos' },
-  { label: 'My Sales History', icon: 'ri-history-line', path: '/app/sales-history' },
+  { label: 'New Sale',         icon: 'ri-shopping-cart-line', path: '/app/pos' },
+  { label: 'My Sales History', icon: 'ri-history-line',       path: '/app/sales-history' },
 ];
-
 const hotelStaffNav: NavItem[] = [
-  { label: 'New Sale', icon: 'ri-shopping-cart-line', path: '/app/pos' },
-  { label: 'Check-in', icon: 'ri-key-2-line', path: '/app/checkin' },
-  { label: 'My Sales History', icon: 'ri-history-line', path: '/app/sales-history' },
+  { label: 'New Sale',         icon: 'ri-shopping-cart-line', path: '/app/pos' },
+  { label: 'Check-in',         icon: 'ri-key-2-line',         path: '/app/checkin' },
+  { label: 'My Sales History', icon: 'ri-history-line',       path: '/app/sales-history' },
 ];
 
-function navFor(type: DemoType, role: Role): NavItem[] {
-  if (role === 'staff') {
-    return type === 'hotel' ? hotelStaffNav : staffNav;
-  }
+function navFor(type: DemoType, role: 'admin' | 'staff'): NavItem[] {
+  if (role === 'staff') return type === 'hotel' ? hotelStaffNav : staffNav;
   switch (type) {
-    case 'hotel':
-      return hotelNav;
-    case 'airbnb':
-      return airbnbNav;
-    case 'marketplace':
-      return marketplaceNav;
-    case 'homes':
-      return homesNav;
-    default:
-      return shopNav;
+    case 'hotel':       return hotelNav;
+    case 'airbnb':      return airbnbNav;
+    case 'marketplace': return marketplaceNav;
+    case 'homes':       return homesNav;
+    default:            return shopNav;
   }
 }
 
 const searchPlaceholder: Record<DemoType, string> = {
-  shop: 'Search products, sales, customers…',
-  hotel: 'Search rooms, bookings, waiters…',
-  airbnb: 'Search listings, bookings, guests…',
+  shop:        'Search products, sales, customers…',
+  hotel:       'Search rooms, bookings, waiters…',
+  airbnb:      'Search listings, bookings, guests…',
   marketplace: 'Search vendors, orders, listings…',
-  homes: 'Search homes, tenants, maintenance…',
+  homes:       'Search homes, tenants, maintenance…',
 };
 
+// ─── SidebarContent ──────────────────────────────────────────────────────────
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const session = getSession();
-  const type = getDemoType();
-  const account = getDemoAccount(type);
-  const navItems = navFor(type, session.role);
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const session   = getSession();
+  const navItems  = navFor(session.type, session.role);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 px-5 pb-6 pt-6">
+      {/* Brand */}
+      <div className="flex items-center gap-3 px-5 pb-4 pt-6">
         <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-500 text-background-50">
           <i className="ri-store-2-line text-xl" />
         </span>
@@ -113,16 +91,18 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
+      {/* Business card */}
       <div className="mx-4 mb-4 rounded-lg border border-background-200 bg-background-100 p-3">
-        <p className="truncate text-sm font-semibold text-foreground-900">{account.businessName}</p>
-        <p className="text-xs text-foreground-500">POS ID: {account.posId}</p>
+        <p className="truncate text-sm font-semibold text-foreground-900">{session.businessName}</p>
+        <p className="text-xs text-foreground-500">POS ID: {session.posId}</p>
         <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-800">
           <i className="ri-vip-crown-line" />
-          {account.plan}
+          {session.planLabel}
         </span>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
+      {/* Nav */}
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -144,10 +124,22 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
+      {/* Back to NyumbaniHub */}
+      <div className="mx-4 my-3">
+        <a
+          href="/"
+          className="flex items-center gap-2 rounded-lg border border-background-200 bg-background-50 px-3 py-2 text-xs font-medium text-foreground-600 hover:bg-background-100"
+        >
+          <i className="ri-arrow-left-line" />
+          Back to NyumbaniHub
+        </a>
+      </div>
+
+      {/* Logout */}
       <div className="border-t border-background-200 p-4">
         <button
           type="button"
-          onClick={() => navigate('/login')}
+          onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-600 transition-colors hover:bg-background-100 hover:text-foreground-950"
         >
           <span className="flex h-5 w-5 items-center justify-center">
@@ -160,34 +152,31 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+// ─── AppShell ─────────────────────────────────────────────────────────────────
+
 export default function AppShell() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const session = getSession();
-  const type = getDemoType();
-  const account = getDemoAccount(type);
-  const admin = session.role === 'admin';
-  const [authReady, setAuthReady] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [branchOpen, setBranchOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const session   = getSession();
+  const type      = getDemoType();
+  const admin     = session.role === 'admin';
+
+  const [authReady,   setAuthReady]   = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [branchOpen,  setBranchOpen]  = useState(false);
+  const [notifOpen,   setNotifOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [activeBranch, setActiveBranch] = useState(branches[0]);
 
+  // Auth guard
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
       const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        navigate('/login', { replace: true });
-        return;
-      }
+      if (!data.session) { navigate('/login', { replace: true }); return; }
       const user = await hydrateSession();
-      if (!user) {
-        navigate('/login', { replace: true });
-        return;
-      }
+      if (!user) { navigate('/login', { replace: true }); return; }
       if (!cancelled) setAuthReady(true);
     }
 
@@ -206,12 +195,12 @@ export default function AppShell() {
     };
   }, [navigate]);
 
+  // Staff route guard
   useEffect(() => {
     if (admin) return;
-    const allowed =
-      type === 'hotel'
-        ? ['/app/pos', '/app/checkin', '/app/sales-history']
-        : ['/app/pos', '/app/sales-history'];
+    const allowed = type === 'hotel'
+      ? ['/app/pos', '/app/checkin', '/app/sales-history']
+      : ['/app/pos', '/app/sales-history'];
     if (!allowed.includes(location.pathname)) {
       navigate('/app/pos', { replace: true });
     }
@@ -230,18 +219,22 @@ export default function AppShell() {
     );
   }
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen bg-background-100">
+      {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-background-200 bg-background-50 lg:block">
         <SidebarContent />
       </aside>
 
+      {/* Mobile sidebar */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-foreground-950/40"
-            onClick={() => setMobileOpen(false)}
-          />
+          <div className="absolute inset-0 bg-foreground-950/40" onClick={() => setMobileOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-72 bg-background-50">
             <button
               type="button"
@@ -256,6 +249,7 @@ export default function AppShell() {
       )}
 
       <div className="lg:pl-64">
+        {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-background-200 bg-background-50 px-4 md:px-6">
           <button
             type="button"
@@ -265,15 +259,12 @@ export default function AppShell() {
             <i className="ri-menu-line text-xl" />
           </button>
 
+          {/* Branch / business badge */}
           {type === 'shop' ? (
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setBranchOpen((v) => !v);
-                  setNotifOpen(false);
-                  setProfileOpen(false);
-                }}
+                onClick={() => { setBranchOpen((v) => !v); setNotifOpen(false); setProfileOpen(false); }}
                 className="flex items-center gap-2 rounded-lg border border-background-200 bg-background-50 px-3 py-1.5 text-sm font-semibold text-foreground-900 transition-colors hover:bg-background-100"
               >
                 <span className="flex h-5 w-5 items-center justify-center text-primary-600">
@@ -284,26 +275,17 @@ export default function AppShell() {
               </button>
               {branchOpen && (
                 <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg border border-background-200 bg-background-50 p-1.5">
-                  <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-foreground-400">
-                    Switch branch
-                  </p>
+                  <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-foreground-400">Switch branch</p>
                   {branches.map((branch) => (
                     <button
                       key={branch.id}
                       type="button"
-                      onClick={() => {
-                        setActiveBranch(branch);
-                        setBranchOpen(false);
-                      }}
+                      onClick={() => { setActiveBranch(branch); setBranchOpen(false); }}
                       className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground-700 hover:bg-background-100"
                     >
-                      <span className="flex h-5 w-5 items-center justify-center text-foreground-400">
-                        <i className="ri-map-pin-line" />
-                      </span>
+                      <i className="ri-map-pin-line text-foreground-400" />
                       <span className="flex-1 whitespace-nowrap">{branch.name}</span>
-                      {activeBranch.id === branch.id && (
-                        <i className="ri-check-line text-primary-600" />
-                      )}
+                      {activeBranch.id === branch.id && <i className="ri-check-line text-primary-600" />}
                     </button>
                   ))}
                 </div>
@@ -312,16 +294,17 @@ export default function AppShell() {
           ) : (
             <div className="flex items-center gap-2 rounded-lg border border-background-200 bg-background-50 px-3 py-1.5">
               <span className="flex h-5 w-5 items-center justify-center text-primary-600">
-                <i className={account.icon} />
+                <i className="ri-store-2-line" />
               </span>
               <span className="whitespace-nowrap text-sm font-semibold text-foreground-900">
-                {account.label}
+                {session.businessName}
               </span>
             </div>
           )}
 
+          {/* Search */}
           <div className="relative ml-auto hidden md:block">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center text-foreground-400">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground-400">
               <i className="ri-search-line text-sm" />
             </span>
             <input
@@ -331,105 +314,82 @@ export default function AppShell() {
             />
           </div>
 
+          {/* Right icons */}
           <div className="ml-auto flex items-center gap-1 md:ml-0">
+            {/* Notifications */}
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setNotifOpen((v) => !v);
-                  setBranchOpen(false);
-                  setProfileOpen(false);
-                }}
+                onClick={() => { setNotifOpen((v) => !v); setBranchOpen(false); setProfileOpen(false); }}
                 className="relative flex h-9 w-9 items-center justify-center rounded-md text-foreground-600 hover:bg-background-100"
               >
                 <i className="ri-notification-3-line text-xl" />
                 <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent-500" />
               </button>
               {notifOpen && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-background-200 bg-background-50 p-2">
+                <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-background-200 bg-background-50 p-2 shadow-lg">
                   <div className="flex items-center justify-between px-2 py-2">
                     <p className="text-sm font-bold text-foreground-950">Notifications</p>
-                    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-800">
-                      3 new
-                    </span>
+                    <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-semibold text-accent-800">3 new</span>
                   </div>
-                  <div className="space-y-1">
-                    <div className="rounded-md bg-background-100 p-3">
-                      <p className="text-sm font-medium text-foreground-900">Low stock alert</p>
-                      <p className="text-xs text-foreground-500">
-                        Omo Detergent 500g is below minimum stock.
-                      </p>
+                  {[
+                    { title: 'Low stock alert', body: 'Omo Detergent 500g is below minimum stock.' },
+                    { title: 'Out of stock', body: 'Mombasa Biscuits has run out.' },
+                    { title: 'Payment received', body: 'M-PESA payment of KSh 1,370 confirmed.' },
+                  ].map((n) => (
+                    <div key={n.title} className="rounded-md bg-background-100 p-3 mb-1">
+                      <p className="text-sm font-medium text-foreground-900">{n.title}</p>
+                      <p className="text-xs text-foreground-500">{n.body}</p>
                     </div>
-                    <div className="rounded-md bg-background-100 p-3">
-                      <p className="text-sm font-medium text-foreground-900">Out of stock</p>
-                      <p className="text-xs text-foreground-500">
-                        Mombasa Biscuits has run out.
-                      </p>
-                    </div>
-                    <div className="rounded-md bg-background-100 p-3">
-                      <p className="text-sm font-medium text-foreground-900">Payment received</p>
-                      <p className="text-xs text-foreground-500">
-                        M-PESA payment of KSh 1,370 confirmed.
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </div>
 
+            {/* Profile */}
             <div className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setProfileOpen((v) => !v);
-                  setBranchOpen(false);
-                  setNotifOpen(false);
-                }}
+                onClick={() => { setProfileOpen((v) => !v); setBranchOpen(false); setNotifOpen(false); }}
                 className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-background-100"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary-500 text-sm font-bold text-background-50">
                   {session.initials}
                 </span>
                 <span className="hidden text-left md:block">
-                  <span className="block text-sm font-semibold leading-tight text-foreground-900">
-                    {session.name}
-                  </span>
+                  <span className="block text-sm font-semibold leading-tight text-foreground-900">{session.name}</span>
                   <span className="block text-[11px] text-foreground-500">{session.title}</span>
                 </span>
                 <i className="ri-arrow-down-s-line hidden text-foreground-500 md:block" />
               </button>
               {profileOpen && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-background-200 bg-background-50 p-1.5">
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-background-200 bg-background-50 p-1.5 shadow-lg">
                   <div className="border-b border-background-200 px-3 py-2.5">
                     <p className="text-sm font-semibold text-foreground-950">{session.name}</p>
                     <p className="text-xs text-foreground-500">{session.email}</p>
                   </div>
-                  {[
-                    { label: 'My Profile', icon: 'ri-user-settings-line' },
-                    { label: 'Account Settings', icon: 'ri-settings-3-line' },
-                  ].map((item) => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground-700 hover:bg-background-100"
-                    >
-                      <span className="flex h-5 w-5 items-center justify-center text-foreground-400">
-                        <i className={item.icon} />
-                      </span>
-                      {item.label}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProfileOpen(false);
-                      navigate('/login');
-                    }}
+                  <a
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
                     className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground-700 hover:bg-background-100"
                   >
-                    <span className="flex h-5 w-5 items-center justify-center text-foreground-400">
-                      <i className="ri-logout-box-r-line" />
-                    </span>
+                    <i className="ri-user-settings-line text-foreground-400" />
+                    NyumbaniHub Profile
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => { setProfileOpen(false); navigate('/app/settings'); }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground-700 hover:bg-background-100"
+                  >
+                    <i className="ri-settings-3-line text-foreground-400" />
+                    POS Settings
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setProfileOpen(false); handleLogout(); }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground-700 hover:bg-background-100"
+                  >
+                    <i className="ri-logout-box-r-line text-foreground-400" />
                     Logout
                   </button>
                 </div>

@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:pos": "vite --config vite.config.pos.ts",
     "sitemap": "node scripts/generate-sitemap.mjs",
     "build": "npm run sitemap && tsc -b && vite build",
+    "build:pos": "tsc -b --build tsconfig.pos.json && vite build --config vite.config.pos.ts",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:pos": "vite preview --config vite.config.pos.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
@@ -23,6 +26,7 @@
     "react-dom": "^19.2.4",
     "react-i18next": "^16.6.6",
     "react-router-dom": "^7.18.0",
+    "recharts": "^3.10.1",
     "remixicon": "^4.9.1"
   },
   "devDependencies": {

@@ -5,6 +5,7 @@ import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import { supabase } from '../../lib/supabase';
 import { getSubscriptionExpiry, accountTypeToListingTypes, parseSubscriptionDetails } from '../../lib/subscription';
 import { serviceSubcategories, entertainmentSubcategories } from '../../lib/subcategories';
+import { checkPosEligibility } from '../../lib/posAccess';
 
 type Favorite = {
   id: string;
@@ -78,6 +79,7 @@ export default function ProfilePage() {
   const [subscriptionDetails, setSubscriptionDetails] = useState<Record<string, unknown>>({});
   const [primaryAccountType, setPrimaryAccountType] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
   const userName = displayName;
   const userPhone = displayPhone;
   const isServiceProvider = approvedTypes.length > 0
@@ -192,6 +194,7 @@ export default function ProfilePage() {
     const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate('/signin'); return; }
+      setSession(session);
       const promises: Promise<any>[] = [
         (async () => {
           const { data } = await supabase.from('users').select('avatar_url, subscription_expires_at, subscription_details, has_notification, notification_message, account_type, extra_account_types, business_name, business_avatar_url').eq('id', session.user.id).single();
@@ -491,6 +494,11 @@ export default function ProfilePage() {
     landlord: 500, airbnb: 500, hotel: 500,
     shop: 800, marketplace: 800,
     service: 400, entertainment: 400,
+    // POS Add-on pricing (monthly)
+    'shop-pos': 1500, 'landlord-pos': 1500, 'airbnb-pos': 1500, 'hotel-pos': 1500, 'marketplace-pos': 1500,
+    'service-pos': 1500, 'entertainment-pos': 1500,
+    // POS-only pricing (for users who only want POS)
+    'pos-only': 2100,
   };
 
   const renewAmount = (PRICING[renewAccountType] || 500) * renewMonths;
@@ -914,6 +922,124 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
+
+          {/* POS Access Card */}
+          {(() => {
+            const posEligibility = checkPosEligibility(
+              primaryAccountType,
+              approvedTypes,
+              subscriptionExpiresAt,
+              subscriptionDetails
+            );
+
+            if (posEligibility.canAccess) {
+              if (posEligibility.hasSubscription) {
+                // User has active POS subscription
+                return (
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 flex items-center justify-center bg-emerald-100 rounded-xl flex-shrink-0">
+                        <i className="ri-store-2-line text-emerald-600 text-2xl"></i>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 text-lg">Nyumbani Link POS</h3>
+                        <p className="text-gray-600 text-sm mt-1">
+                          Complete business management system - Active subscription
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                          <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Point of Sale</span>
+                          <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Inventory Management</span>
+                          <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Customer Management</span>
+                          <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Reports</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                      <a
+                        href={`https://pos.nyumbanilink.com?email=${encodeURIComponent(session?.user?.email || '')}&redirect=true`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                      >
+                        <i className="ri-external-link-line"></i>
+                        Open POS System
+                      </a>
+                      <button className="bg-white border border-emerald-200 text-emerald-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-emerald-50 transition-colors flex items-center gap-2">
+                        <i className="ri-question-line"></i>
+                        Learn More
+                      </button>
+                    </div>
+                  </div>
+                );
+              } else {
+                // User needs to subscribe to POS
+                const pricing = posEligibility.pricing || (posEligibility.hasActiveAccount ? 1500 : 2100);
+                const pricingText = posEligibility.hasActiveAccount 
+                  ? `KSh 1,500/month (Add-on)` 
+                  : `KSh 2,100/month (Standalone)`;
+                
+                return (
+                  <div className="bg-white border border-gray-200 rounded-2xl p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-xl flex-shrink-0">
+                        <i className="ri-store-2-line text-gray-600 text-2xl"></i>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-gray-900 text-lg">Nyumbani Link POS</h3>
+                          <span className="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                            {posEligibility.hasActiveAccount ? 'Add-on' : 'Standalone'}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 text-sm">
+                          Complete business management system for your business
+                          {posEligibility.hasActiveAccount && ` (${posEligibility.accountType} account holder)`}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Point of Sale</span>
+                          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Inventory Management</span>
+                          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Customer Management</span>
+                          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Reports</span>
+                        </div>
+                        {!posEligibility.hasActiveAccount && (
+                          <p className="text-amber-600 text-xs mt-2 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1">
+                            <i className="ri-information-line mr-1"></i>
+                            Includes basic business account access
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                      <button 
+                        onClick={() => {
+                          // Set POS subscription parameters with new pricing
+                          const posAccountType = posEligibility.hasActiveAccount 
+                            ? `${posEligibility.accountType}-pos` 
+                            : 'pos-only';
+                          setRenewAccountType(posAccountType);
+                          setShowRenew(true);
+                          setRenewStep('account');
+                          setRenewMonths(1);
+                          setRenewError('');
+                          setRenewSuccess(false);
+                        }}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                      >
+                        <i className="ri-vip-crown-line"></i>
+                        Subscribe to POS ({pricingText})
+                      </button>
+                      <button className="bg-white border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2">
+                        <i className="ri-question-line"></i>
+                        Learn More
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+            }
+
+            return null;
+          })()}
 
           {/* Tab switcher for normal users */}
           {isNormalUser && (
@@ -1397,7 +1523,10 @@ export default function ProfilePage() {
                   <i className="ri-checkbox-circle-fill text-emerald-600 text-2xl"></i>
                 </div>
                 <p className="font-bold text-gray-900">Payment Confirmed!</p>
-                <p className="text-xs text-gray-400 mt-1">Your {renewAccountType} account has been renewed. You can post listings again.</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Your {renewAccountType.includes('-pos') ? `POS subscription (${renewAccountType})` : `${renewAccountType} account`} has been renewed. 
+                  {renewAccountType.includes('-pos') ? ' You can now access the POS system.' : ' You can post listings again.'}
+                </p>
                 <button onClick={() => { setShowRenew(false); setRenewSuccess(false); setRenewalId(null); }} className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer whitespace-nowrap">Done</button>
               </div>
             )}
@@ -1471,7 +1600,7 @@ export default function ProfilePage() {
                       </button>
                     )}
                     <h2 className="font-bold text-gray-900 text-sm">
-                      {renewStep === 'account' && 'Select Account to Renew'}
+                      {renewStep === 'account' && (renewAccountType?.includes('-pos') ? 'POS Subscription' : 'Select Account to Renew')}
                       {renewStep === 'months' && 'How Many Months?'}
                       {renewStep === 'method' && 'Payment Method'}
                       {renewStep === 'mpesa' && 'Pay via M-Pesa'}
@@ -1487,7 +1616,32 @@ export default function ProfilePage() {
                 {/* STEP 1 — Select account type */}
                 {renewStep === 'account' && (
                   <div className="space-y-3">
-                    {approvedTypes.length === 0 ? (
+                    {renewAccountType?.includes('-pos') ? (
+                      // POS subscription flow - account type already selected
+                      <div className="space-y-3">
+                        <p className="text-xs text-gray-400">POS access subscription{renewAccountType.includes('-pos') ? ` (${renewAccountType.replace('-pos', '')} add-on)` : ' (standalone)'}.</p>
+                        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 flex items-center justify-center bg-emerald-100 rounded-lg">
+                              <i className="ri-store-2-line text-emerald-600 text-xl"></i>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">Nyumbani Link POS</p>
+                              <p className="text-xs text-gray-600">
+                                KSh {(PRICING[renewAccountType] || 1500).toLocaleString()}/month
+                                {renewAccountType === 'pos-only' && ' (includes basic business account)'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setRenewStep('months')}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-3 rounded-xl transition-colors cursor-pointer whitespace-nowrap"
+                        >
+                          Continue
+                        </button>
+                      </div>
+                    ) : approvedTypes.length === 0 ? (
                       <p className="text-sm text-gray-400 text-center py-4">No approved accounts found. Request an account first.</p>
                     ) : (
                       <>
@@ -1553,7 +1707,9 @@ export default function ProfilePage() {
                     <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs text-gray-500 capitalize">{renewAccountType} × {renewMonths} month{renewMonths > 1 ? 's' : ''}</p>
+                          <p className="text-xs text-gray-500 capitalize">
+                            {renewAccountType.includes('-pos') ? 'POS Subscription' : renewAccountType} × {renewMonths} month{renewMonths > 1 ? 's' : ''}
+                          </p>
                           <p className="text-xs text-gray-400">KSh {(PRICING[renewAccountType] || 500).toLocaleString()} × {renewMonths}</p>
                         </div>
                         <p className="text-2xl font-black text-emerald-700">KSh {renewAmount.toLocaleString()}</p>
@@ -1561,7 +1717,7 @@ export default function ProfilePage() {
                       {renewMonths >= 3 && (
                         <p className="text-xs text-emerald-600 font-semibold mt-2">
                           <i className="ri-shield-check-line mr-1"></i>
-                          Account stays active for {renewMonths} months!
+                          {renewAccountType.includes('-pos') ? 'POS access' : 'Account'} stays active for {renewMonths} months!
                         </p>
                       )}
                     </div>
