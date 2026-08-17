@@ -18,8 +18,8 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <SEO
-        title="All Categories — Homes, Airbnbs, Services & Marketplace in Kenya"
-        description="Browse all categories on Nyumbani Hub. Verified homes, apartments, Airbnbs, hotels, shops, services and marketplace products across all 47 counties in Kenya."
+        title="All Categories - Homes, Airbnbs, Services and Marketplace in Kenya"
+        description="Browse all categories on Nyumbani Link. Verified homes, apartments, Airbnbs, hotels, shops, services and marketplace products across all 47 counties in Kenya."
         path="/categories"
       />
       <Navbar />
@@ -32,7 +32,7 @@ export default function CategoriesPage() {
             </span>
             <h1 className="text-2xl md:text-4xl font-bold text-gray-900">Browse by Category</h1>
             <p className="text-gray-500 text-sm mt-2 max-w-md mx-auto">
-              From verified homes to handcrafted marketplace products — find exactly what you need across Kenya.
+              From verified homes to handcrafted marketplace products - find exactly what you need across Kenya.
             </p>
           </div>
         </div>

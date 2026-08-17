@@ -73,7 +73,7 @@ export default function MarketplaceSection() {
         <div className="bg-gradient-to-r from-amber-50 via-white to-emerald-50 border border-amber-100 rounded-2xl p-4 mb-6 flex flex-wrap gap-4">
           {[
             { icon: 'ri-map-pin-2-fill', color: 'text-emerald-600', text: 'Every shop has a real, verifiable physical address' },
-            { icon: 'ri-shield-check-fill', color: 'text-emerald-600', text: 'No anonymous sellers — all businesses are registered' },
+            { icon: 'ri-shield-check-fill', color: 'text-emerald-600', text: 'No anonymous sellers - all businesses are registered' },
             { icon: 'ri-walk-line', color: 'text-amber-600', text: 'You can visit the shop in person to inspect goods' },
           ].map((item) => (
             <div key={item.text} className="flex items-start gap-2 flex-1 min-w-[180px]">
@@ -138,7 +138,7 @@ export default function MarketplaceSection() {
           </div>
           <h3 className="font-bold text-gray-900 text-lg">Are You a Shop Owner?</h3>
           <p className="text-gray-500 text-sm mt-1 max-w-md mx-auto">
-            List your products on Nyumbani Hub and reach thousands of verified customers. Your shop will be physically inspected before approval.
+            List your products on Nyumbani Link and reach thousands of verified customers. Your shop will be physically inspected before approval.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
             <Link

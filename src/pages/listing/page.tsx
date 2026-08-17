@@ -94,7 +94,7 @@ export default function ListingPage() {
   const handleShare = () => {
     const url = window.location.href;
     if (navigator.share) {
-      navigator.share({ title: listing?.title, text: `Check out this listing on Nyumbani Hub`, url });
+      navigator.share({ title: listing?.title, text: `Check out this listing on Nyumbani Link`, url });
     } else {
       navigator.clipboard.writeText(url);
       alert('Link copied to clipboard!');
@@ -126,7 +126,7 @@ export default function ListingPage() {
   const phone = listing.phone || '';
   const whatsappLink = createWhatsAppLink(
     listing.whatsapp || listing.phone,
-    `Hi, I saw your listing "${listing.title}" on Nyumbani Hub and I'm interested.`
+    `Hi, I saw your listing "${listing.title}" on Nyumbani Link and I'm interested.`
   );
 
   return (
@@ -267,7 +267,7 @@ export default function ListingPage() {
                     <i className="ri-shield-check-fill text-emerald-300 text-lg"></i>
                   </span>
                   <div>
-                    <p className="font-bold text-sm">Verified by Nyumbani Hub</p>
+                    <p className="font-bold text-sm">Verified by Nyumbani Link</p>
                     <p className="text-emerald-200 text-xs">Approved listing</p>
                   </div>
                 </div>
@@ -350,7 +350,7 @@ export default function ListingPage() {
                     'Always visit the property in person before paying',
                     'Never send money without seeing the property',
                     'Verify owner ID matches listing details',
-                    'Report suspicious behavior to Nyumbani Hub',
+                    'Report suspicious behavior to Nyumbani Link',
                   ].map((tip) => (
                     <li key={tip} className="flex items-start gap-2">
                       <i className="ri-shield-check-line text-emerald-500 text-xs mt-0.5 flex-shrink-0"></i>

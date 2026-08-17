@@ -157,7 +157,7 @@ export default function ProviderProfilePage() {
                 <i className="ri-phone-fill"></i> Call Now
               </a>
               <a
-                href={createWhatsAppLink(provider.phone, `Hi ${providerName}, I found your profile on Nyumbani Hub and I need your services.`)}
+                href={createWhatsAppLink(provider.phone, `Hi ${providerName}, I found your profile on Nyumbani Link and I need your services.`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba58] text-white font-semibold text-sm py-3 rounded-xl transition-colors"
@@ -224,7 +224,7 @@ export default function ProviderProfilePage() {
             <div>
               <p className="font-bold text-gray-900 text-sm">Verified Provider</p>
               <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
-                This provider has been physically verified by Nyumbani Hub. Their identity, services, and location have been confirmed.
+                This provider has been physically verified by Nyumbani Link. Their identity, services, and location have been confirmed.
               </p>
             </div>
           </div>

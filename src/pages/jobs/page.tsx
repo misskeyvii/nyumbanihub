@@ -3,7 +3,6 @@ import { supabase } from '../../lib/supabase';
 import SEO from '../../components/base/SEO';
 
 const departments: { name: string; icon: string; color: string; bg: string; positions: string[] }[] = [
-  { name: 'Executive Management', icon: 'ri-vip-crown-fill', color: 'text-amber-600', bg: 'bg-amber-50', positions: ['Founder & Chief Executive Officer (CEO)', 'Chief Operating Officer (COO)', 'Executive Assistant', 'Strategy & Business Development Manager'] },
   { name: 'Administration & HR', icon: 'ri-team-fill', color: 'text-blue-600', bg: 'bg-blue-50', positions: ['Human Resource Manager', 'HR Officer', 'Recruitment Officer', 'Administrative Officer', 'Office Administrator', 'Receptionist', 'Office Assistant', 'Records Officer'] },
   { name: 'Finance & Accounts', icon: 'ri-money-dollar-circle-fill', color: 'text-emerald-600', bg: 'bg-emerald-50', positions: ['Finance Manager', 'Accountant', 'Assistant Accountant', 'Accounts Receivable Officer', 'Accounts Payable Officer', 'Payroll Officer', 'Internal Auditor', 'Procurement Officer', 'Storekeeper'] },
   { name: 'Technology', icon: 'ri-code-s-slash-fill', color: 'text-violet-600', bg: 'bg-violet-50', positions: ['Chief Technology Officer (CTO)', 'Software Engineer (Frontend)', 'Software Engineer (Backend)', 'Full Stack Developer', 'Mobile App Developer (Android)', 'Mobile App Developer (iOS)', 'UI/UX Designer', 'DevOps Engineer', 'Database Administrator', 'QA/Software Tester', 'Cybersecurity Officer', 'IT Support Technician', 'Systems Administrator', 'AI Engineer', 'API Integration Developer'] },
@@ -247,7 +246,7 @@ export default function JobsPage() {
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500 block mb-1.5">
-                      Upload CV <span className="font-normal text-gray-400">(PDF, DOC — optional)</span>
+                      Upload CV <span className="font-normal text-gray-400">(PDF, DOC - optional)</span>
                     </label>
                     <label className="flex items-center gap-3 border-2 border-dashed border-gray-200 hover:border-emerald-400 rounded-xl px-4 py-3 cursor-pointer transition-colors">
                       <i className="ri-upload-cloud-2-line text-gray-400 text-xl flex-shrink-0"></i>

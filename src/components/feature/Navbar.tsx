@@ -66,7 +66,7 @@ export default function Navbar() {
             <Link to="/" className="flex items-center gap-2 flex-shrink-0">
               <img
                 src="https://i.postimg.cc/qM8Nz01k/Untitled-design.png"
-                alt="Nyumbani Hub"
+                alt="Nyumbani Link"
                 className={`h-11 w-auto transition-all ${logoFilter}`}
               />
             </Link>

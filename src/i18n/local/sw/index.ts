@@ -15,7 +15,7 @@ const sw = {
   // Hero
   heroTitle: 'Pata Nyumba Zilizothibitishwa,',
   heroSubtitle: 'Huduma & Bidhaa Kenya',
-  heroTagline: 'Nyumbani Hub inakuunganisha na wamiliki wa nyumba, biashara, na watoa huduma waliohakikishwa — bila udanganyifu.',
+  heroTagline: 'Nyumbani Link inakuunganisha na wamiliki wa nyumba, biashara, na watoa huduma waliohakikishwa - bila udanganyifu.',
   searchPlaceholder: 'Tafuta nyumba, maduka, huduma...',
   allCounties: 'Kaunti Zote',
   search: 'Tafuta',
@@ -39,7 +39,7 @@ const sw = {
   noListings: 'Hakuna matangazo yanayolingana na vichujio vyako',
 
   // Listing
-  verifiedBy: 'Imethibitishwa na Nyumbani Hub',
+  verifiedBy: 'Imethibitishwa na Nyumbani Link',
   approvedListing: 'Tangazo lililoidhinishwa',
   callNow: 'Piga Simu',
   whatsapp: 'WhatsApp',

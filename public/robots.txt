@@ -1,4 +1,4 @@
-# Nyumbani Hub — https://nyumbanilink.com
+# Nyumbani Link - https://nyumbanilink.com
 # robots.txt
 
 User-agent: *

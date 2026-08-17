@@ -59,13 +59,13 @@ export default function ServiceDetailPage() {
 
   const pageTitle = county ? `${info.label} in ${county}` : info.label;
   const pageDescription = county
-    ? `Find verified ${info.label.toLowerCase()} providers in ${county}. Contact background-checked Nyumbani Hub service providers directly by phone or WhatsApp.`
-    : `${info.desc}. Browse verified ${info.label.toLowerCase()} providers on Nyumbani Hub.`;
+    ? `Find verified ${info.label.toLowerCase()} providers in ${county}. Contact background-checked Nyumbani Link service providers directly by phone or WhatsApp.`
+    : `${info.desc}. Browse verified ${info.label.toLowerCase()} providers on Nyumbani Link.`;
   const pagePath = county ? `/services/${type}/${slugifyLocation(county)}` : `/services/${type}`;
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: `${pageTitle} | Nyumbani Hub`,
+    name: `${pageTitle} | Nyumbani Link`,
     description: pageDescription,
     url: `https://nyumbanilink.com${pagePath}`,
     about: [
@@ -161,7 +161,7 @@ export default function ServiceDetailPage() {
                       <a href={`tel:${p.phone}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
                         <i className="ri-phone-fill text-xs"></i> Call Now
                       </a>
-                      <a href={createWhatsAppLink(p.phone, `Hi ${providerName}, I found you on Nyumbani Hub and I need your services.`)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                      <a href={createWhatsAppLink(p.phone, `Hi ${providerName}, I found you on Nyumbani Link and I need your services.`)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
                         <i className="ri-whatsapp-fill text-xs"></i> WhatsApp
                       </a>
                     </div>
@@ -175,7 +175,7 @@ export default function ServiceDetailPage() {
                 <i className="ri-user-search-line text-emerald-400 text-2xl"></i>
               </div>
               <p className="text-gray-600 font-semibold">No providers listed yet</p>
-              <p className="text-gray-400 text-sm mt-1">Be the first {info.label} provider{county ? ` in ${county}` : ''} on Nyumbani Hub!</p>
+              <p className="text-gray-400 text-sm mt-1">Be the first {info.label} provider{county ? ` in ${county}` : ''} on Nyumbani Link!</p>
               <Link to="/signin" className="inline-block mt-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors whitespace-nowrap">
                 Register as Provider
               </Link>
@@ -186,7 +186,7 @@ export default function ServiceDetailPage() {
         <div className="mt-12 bg-emerald-700 rounded-2xl p-6 md:p-8 text-white text-center">
             <h3 className="font-bold text-xl mb-2">Are You a {info.label} Provider?</h3>
             <p className="text-emerald-100 text-sm max-w-md mx-auto mb-5">
-              Get listed on Nyumbani Hub, pass our physical verification, and connect with thousands of Kenyans who need your services.
+              Get listed on Nyumbani Link, pass our physical verification, and connect with thousands of Kenyans who need your services.
             </p>
             <Link to="/signin" className="inline-block bg-white text-emerald-700 font-bold text-sm px-7 py-3 rounded-xl hover:bg-emerald-50 transition-colors whitespace-nowrap">
               Register as {info.label}

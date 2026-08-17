@@ -5,9 +5,9 @@ import MobileBottomNav from '../../components/feature/MobileBottomNav';
 import Footer from '../../components/feature/Footer';
 
 const customerSteps = [
-  { step: 1, icon: 'ri-search-2-line', title: 'Browse Listings', desc: 'Search for verified homes, Airbnbs, services, or marketplace products by location, price, and category — completely free.' },
+  { step: 1, icon: 'ri-search-2-line', title: 'Browse Listings', desc: 'Search for verified homes, Airbnbs, services, or marketplace products by location, price, and category - completely free.' },
   { step: 2, icon: 'ri-shield-check-line', title: 'Check Verification', desc: 'Every listing shows a "Verified by Nyumbani Link" or "Inspected" badge. You know exactly what\'s real and what\'s been checked.' },
-  { step: 3, icon: 'ri-phone-line', title: 'Contact Owner Directly', desc: 'Click Call or WhatsApp to reach the owner directly. No platform fees, no middlemen — just a safe, direct connection.' },
+  { step: 3, icon: 'ri-phone-line', title: 'Contact Owner Directly', desc: 'Click Call or WhatsApp to reach the owner directly. No platform fees, no middlemen - just a safe, direct connection.' },
   { step: 4, icon: 'ri-map-pin-2-line', title: 'Visit in Person', desc: 'Schedule a physical visit before making any payments. We always encourage real-life meetups to avoid scams.' },
 ];
 
@@ -31,8 +31,8 @@ export default function HowItWorksPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <SEO
-        title="How It Works — Find Verified Homes & Services in Kenya"
-        description="Learn how Nyumbani Hub works. Browse free, check verification badges, contact owners directly and visit in person. Zero scams, 100% verified listings across Kenya."
+        title="How It Works - Find Verified Homes and Services in Kenya"
+        description="Learn how Nyumbani Link works. Browse free, check verification badges, contact owners directly and visit in person. Zero scams, 100% verified listings across Kenya."
         path="/how-it-works"
       />
       <Navbar />
@@ -58,7 +58,7 @@ export default function HowItWorksPage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-14">
           <div className="text-center mb-10">
             <span className="inline-block text-xs font-semibold text-sky-600 bg-sky-50 border border-sky-100 px-3 py-1 rounded-full mb-3">For Customers</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Find What You Need — For Free</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Find What You Need - For Free</h2>
             <p className="text-gray-500 text-sm mt-2">No signup required. Just browse, verify, and connect.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -81,7 +81,7 @@ export default function HowItWorksPage() {
             <div className="text-center mb-10">
               <span className="inline-block text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-100 px-3 py-1 rounded-full mb-3">For Businesses &amp; Landlords</span>
               <h2 className="text-2xl md:text-3xl font-bold text-gray-900">List, Get Verified &amp; Grow</h2>
-              <p className="text-gray-500 text-sm mt-2">Only verified businesses and landlords can post listings on Nyumbani Hub.</p>
+              <p className="text-gray-500 text-sm mt-2">Only verified businesses and landlords can post listings on Nyumbani Link.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {businessSteps.map((s) => (

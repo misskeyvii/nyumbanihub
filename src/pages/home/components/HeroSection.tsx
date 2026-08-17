@@ -76,7 +76,7 @@ export default function HeroSection() {
             <div className="fade-slide-up mb-3 md:mb-5 inline-flex flex-col items-center gap-1">
               <div className="inline-flex items-center gap-2 bg-amber-400/20 backdrop-blur-sm border border-amber-400/40 rounded-full px-4 py-1.5 animate-pulse">
                 <i className="ri-gift-fill text-amber-400 text-sm"></i>
-                <span className="text-amber-300 text-xs md:text-sm font-bold tracking-wide">🎉 Launch Offer — First 200 Businesses FREE!</span>
+                <span className="text-amber-300 text-xs md:text-sm font-bold tracking-wide">🎉 Launch Offer - First 200 Businesses FREE!</span>
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1">
@@ -112,7 +112,7 @@ export default function HeroSection() {
               <i className="ri-shield-check-fill text-emerald-400 text-xs md:text-sm" />
             </span>
             <span className="text-white/90 text-[10px] md:text-xs font-semibold tracking-wide">
-              100% Verified — Zero Scams
+              100% Verified - Zero Scams
             </span>
             <span className="hidden md:inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </div>
@@ -133,8 +133,8 @@ export default function HeroSection() {
 
           {/* Tagline — short on mobile */}
           <p className="fade-slide-up-2 text-white/65 text-[11px] md:text-lg mt-2 mb-3 md:mt-4 md:mb-8 max-w-[240px] md:max-w-xl mx-auto leading-snug md:leading-relaxed">
-            <span className="md:hidden">Trusted landlords, shops &amp; services — physically verified.</span>
-            <span className="hidden md:inline">Nyumbani Hub connects you to trusted landlords, businesses, and service providers — all physically verified, zero scams.</span>
+            <span className="md:hidden">Trusted landlords, shops and services - physically verified.</span>
+            <span className="hidden md:inline">Nyumbani Link connects you to trusted landlords, businesses, and service providers - all physically verified, zero scams.</span>
           </p>
 
           {/* Desktop stats */}

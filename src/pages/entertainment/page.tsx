@@ -38,8 +38,8 @@ export default function EntertainmentPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <SEO
-        title="Entertainment Providers in Kenya — DJs, MCs, Catering & Sounds"
-        description="Hire verified DJs, MCs, catering services and sound systems for weddings, parties and corporate events across Kenya. All providers physically verified by Nyumbani Hub."
+        title="Entertainment Providers in Kenya - DJs, MCs, Catering and Sounds"
+        description="Hire verified DJs, MCs, catering services and sound systems for weddings, parties and corporate events across Kenya. All providers physically verified by Nyumbani Link."
         path="/entertainment"
       />
       <Navbar />
@@ -48,7 +48,7 @@ export default function EntertainmentPage() {
         <div className="relative bg-gray-900 overflow-hidden">
           <img
             src="https://readdy.ai/api/search-image?query=entertainment%20event%20Kenya%20outdoor%20concert%20DJ%20MC%20catering%20sound%20system%20lights%20crowd%20dancing%20night%20party%20colorful%20stage%20Nairobi%20vibrant&width=1400&height=420&seq=entbg1&orientation=landscape"
-            alt="Nyumbani Hub Entertainment Kenya"
+            alt="Nyumbani Link Entertainment Kenya"
             className="w-full h-60 md:h-80 object-cover object-top opacity-45"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/60"></div>
@@ -162,7 +162,7 @@ export default function EntertainmentPage() {
                       <a href={`tel:${p.phone}`} className="flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
                         <i className="ri-phone-fill text-xs"></i> Call
                       </a>
-                      <a href={createWhatsAppLink(p.phone, `Hi ${providerName}, I found you on Nyumbani Hub and I would like to book your services.`)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
+                      <a href={createWhatsAppLink(p.phone, `Hi ${providerName}, I found you on Nyumbani Link and I would like to book your services.`)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#20ba58] text-white text-xs font-semibold py-2.5 rounded-xl transition-colors whitespace-nowrap">
                         <i className="ri-whatsapp-fill text-xs"></i> WhatsApp
                       </a>
                     </div>
@@ -175,9 +175,9 @@ export default function EntertainmentPage() {
           {/* Trust Banner */}
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { icon: 'ri-shield-check-line', color: 'text-emerald-600 bg-emerald-50', title: 'All Providers Verified', desc: 'Every provider is physically verified by Nyumbani Hub before listing.' },
+              { icon: 'ri-shield-check-line', color: 'text-emerald-600 bg-emerald-50', title: 'All Providers Verified', desc: 'Every provider is physically verified by Nyumbani Link before listing.' },
               { icon: 'ri-user-star-line', color: 'text-amber-600 bg-amber-50', title: 'Real Reviews', desc: 'Reviews are from real Kenyans who hired these providers.' },
-              { icon: 'ri-phone-line', color: 'text-rose-600 bg-rose-50', title: 'Direct Contact', desc: 'Contact providers directly — no booking fees, no middleman.' },
+              { icon: 'ri-phone-line', color: 'text-rose-600 bg-rose-50', title: 'Direct Contact', desc: 'Contact providers directly - no booking fees, no middleman.' },
             ].map((item) => (
               <div key={item.title} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-start gap-4">
                 <div className={`w-10 h-10 flex items-center justify-center rounded-xl flex-shrink-0 ${item.color}`}>
@@ -194,7 +194,7 @@ export default function EntertainmentPage() {
           <div className="mt-8 bg-gradient-to-r from-rose-600 to-rose-500 rounded-2xl p-6 md:p-8 text-white text-center">
             <h3 className="font-bold text-xl mb-2">Are You an Entertainment Provider?</h3>
             <p className="text-rose-100 text-sm max-w-md mx-auto mb-5">
-              List your entertainment services on Nyumbani Hub and get discovered by thousands of event organizers across Kenya.
+              List your entertainment services on Nyumbani Link and get discovered by thousands of event organizers across Kenya.
             </p>
             <Link to="/signin" className="inline-block bg-white text-rose-600 font-bold text-sm px-7 py-3 rounded-xl hover:bg-rose-50 transition-colors whitespace-nowrap">
               Register as Entertainment Provider

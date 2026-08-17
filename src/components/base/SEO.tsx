@@ -14,7 +14,7 @@ interface SEOProps {
 
 export default function SEO({ title, description, path = '', image = DEFAULT_IMAGE, type = 'website', structuredData }: SEOProps) {
   useEffect(() => {
-    const fullTitle = `${title} | Nyumbani Hub`;
+    const fullTitle = `${title} | Nyumbani Link`;
     const canonical = `${BASE_URL}${path}`;
 
     document.title = fullTitle;

@@ -58,8 +58,8 @@ export default function ServicesPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <SEO
-        title="Verified Services in Kenya — Mama Fua, Movers, Plumbers & More"
-        description="Hire background-checked, physically verified service providers in Kenya. Mama Fua, movers, caretakers, plumbers, electricians, security and more on Nyumbani Hub."
+        title="Verified Services in Kenya - Mama Fua, Movers, Plumbers and More"
+        description="Hire background-checked, physically verified service providers in Kenya. Mama Fua, movers, caretakers, plumbers, electricians, security and more on Nyumbani Link."
         path="/services"
       />
       <Navbar />
@@ -68,7 +68,7 @@ export default function ServicesPage() {
         <div className="relative bg-gray-900 overflow-hidden">
           <img
             src="https://readdy.ai/api/search-image?query=professional%20service%20workers%20Kenya%20team%20mama%20fua%20cleaner%20mover%20caretaker%20uniformed%20modern%20building%20outdoor%20smiling%20confident%20group%20diverse&width=1400&height=380&seq=svcbg&orientation=landscape"
-            alt="Nyumbani Hub Verified Services Kenya"
+            alt="Nyumbani Link Verified Services Kenya"
             className="w-full h-52 md:h-72 object-cover object-top opacity-45"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/50"></div>
@@ -79,7 +79,7 @@ export default function ServicesPage() {
             </span>
             <h1 className="text-white font-bold text-2xl md:text-4xl">Trusted Services in Kenya</h1>
             <p className="text-white/70 text-sm mt-2 max-w-md">
-              Every Mama Fua, mover, and caretaker is background-checked and physically verified by Nyumbani Hub.
+              Every Mama Fua, mover, and caretaker is background-checked and physically verified by Nyumbani Link.
             </p>
           </div>
         </div>
@@ -160,7 +160,7 @@ export default function ServicesPage() {
               {[
                 { step: '01', icon: 'ri-search-2-line', title: 'Choose Service', desc: 'Browse verified Mama Fua, movers, plumbers, and more.' },
                 { step: '02', icon: 'ri-user-follow-line', title: 'View Provider', desc: 'Check ratings, experience, and verified badge.' },
-                { step: '03', icon: 'ri-phone-line', title: 'Contact Directly', desc: 'Call or WhatsApp the provider — no fees, no middleman.' },
+                { step: '03', icon: 'ri-phone-line', title: 'Contact Directly', desc: 'Call or WhatsApp the provider - no fees, no middleman.' },
                 { step: '04', icon: 'ri-star-line', title: 'Leave a Review', desc: 'Help other Kenyans find quality services near them.' },
               ].map((item) => (
                 <div key={item.step} className="text-center">
@@ -181,7 +181,7 @@ export default function ServicesPage() {
           <div className="bg-emerald-700 rounded-2xl p-6 md:p-8 text-white text-center">
             <h3 className="font-bold text-xl mb-2">Are You a Service Provider?</h3>
             <p className="text-emerald-100 text-sm max-w-md mx-auto mb-5">
-              Register on Nyumbani Hub, get physically verified, and grow your business with thousands of new clients across Kenya.
+              Register on Nyumbani Link, get physically verified, and grow your business with thousands of new clients across Kenya.
             </p>
             <Link to="/signin" className="inline-block bg-white text-emerald-700 font-bold text-sm px-7 py-3 rounded-xl hover:bg-emerald-50 transition-colors whitespace-nowrap">
               Register as Provider

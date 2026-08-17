@@ -72,7 +72,7 @@ const fixedCategoryHero: Record<Exclude<ExplorePageProps['fixedCategory'], undef
   },
   airbnb: {
     title: 'Verified Stays in Kenya',
-    subtitle: 'Book trusted Airbnb-style stays and holiday homes checked by Nyumbani Hub.',
+    subtitle: 'Book trusted Airbnb-style stays and holiday homes checked by Nyumbani Link.',
     image: 'https://readdy.ai/api/search-image?query=cozy%20kenyan%20airbnb%20cottage%20vacation%20home%20garden%20sunset&width=1400&height=420&orientation=landscape',
     stats: [
       { icon: 'ri-home-heart-line', color: 'text-rose-600', value: 'Handpicked stays', label: 'Verified hosts' },
@@ -108,7 +108,7 @@ const fixedCategoryHero: Record<Exclude<ExplorePageProps['fixedCategory'], undef
   },
   shops: {
     title: 'Verified Shops in Kenya',
-    subtitle: 'Shop from verified retailers and vendors offering products across Kenya through Nyumbani Hub.',
+    subtitle: 'Shop from verified retailers and vendors offering products across Kenya through Nyumbani Link.',
     image: 'https://readdy.ai/api/search-image?query=kenyan%20retail%20shop%20market%20store%20friendly%20staff%20bright%20interior&width=1400&height=420&orientation=landscape',
     stats: [
       { icon: 'ri-shopping-bag-2-line', color: 'text-sky-600', value: 'Verified vendors', label: 'Trusted shops' },
@@ -203,7 +203,7 @@ export default function ExplorePage({ fixedCategory, heroImage }: ExplorePagePro
 
   const description = fixedCategory
     ? `Browse verified ${fixedCategoryLabels[fixedCategory].toLowerCase()} across Kenya. Search ${fixedCategoryLabels[fixedCategory].toLowerCase()} listings by county, price and query.`
-    : 'Browse verified homes, apartments, Airbnbs, hotels, shops and services across all 47 counties in Kenya. Filter by location, price and category on Nyumbani Hub.';
+    : 'Browse verified homes, apartments, Airbnbs, hotels, shops and services across all 47 counties in Kenya. Filter by location, price and category on Nyumbani Link.';
 
   const path = fixedCategory ? `/${fixedCategory}` : '/explore';
 
@@ -356,7 +356,7 @@ export default function ExplorePage({ fixedCategory, heroImage }: ExplorePagePro
                     </div>
                     <span className="text-sm text-gray-700 font-medium">Verified Only</span>
                   </label>
-                  <p className="text-xs text-gray-400 mt-1 ml-13">Show only Nyumbani Hub-verified listings</p>
+                  <p className="text-xs text-gray-400 mt-1 ml-13">Show only Nyumbani Link-verified listings</p>
                 </div>
 
                 <button

@@ -30,10 +30,10 @@ export default function EntertainmentSection() {
                 <span className="text-emerald-300 text-xs font-medium">Join {userCount.toLocaleString()}+ Kenyans</span>
               </div>
               <h2 className="text-white font-bold text-2xl md:text-3xl leading-tight mb-3">
-                Ready to List Your Property<br />or Business on Nyumbani Hub?
+                Ready to List Your Property<br />or Business on Nyumbani Link?
               </h2>
               <p className="text-gray-400 text-sm max-w-md leading-relaxed">
-                Get verified, reach thousands of potential customers, and grow your business — the safe, trusted way. One subscription gets you everything.
+                Get verified, reach thousands of potential customers, and grow your business - the safe, trusted way. One subscription gets you everything.
               </p>
               <div className="flex flex-wrap gap-3 mt-6 justify-center md:justify-start">
                 <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-6 py-3 rounded-xl transition-colors whitespace-nowrap cursor-pointer">
@@ -65,7 +65,7 @@ export default function EntertainmentSection() {
 
         {/* App Download */}
         <div className="mt-10 text-center">
-          <p className="text-gray-500 text-sm mb-4">Nyumbani Hub app coming soon to iOS &amp; Android</p>
+          <p className="text-gray-500 text-sm mb-4">Nyumbani Link app coming soon to iOS and Android</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <button className="flex items-center gap-2 bg-gray-900 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap">
               <span className="w-5 h-5 flex items-center justify-center">

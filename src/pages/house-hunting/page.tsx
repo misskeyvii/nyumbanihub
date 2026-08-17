@@ -55,13 +55,13 @@ export default function HouseHuntingPage() {
   }
 
   const title = `Vacant Homes in ${county}`;
-  const description = `Find verified vacant homes, bedsitters, studios and apartments for rent in ${county}. Browse scam-free house hunting listings on Nyumbani Hub.`;
+  const description = `Find verified vacant homes, bedsitters, studios and apartments for rent in ${county}. Browse scam-free house hunting listings on Nyumbani Link.`;
   const path = `/house-hunting/${slugifyLocation(county)}`;
 
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: `${title} | Nyumbani Hub`,
+    name: `${title} | Nyumbani Link`,
     description,
     url: `https://nyumbanilink.com${path}`,
     about: [
@@ -93,7 +93,7 @@ export default function HouseHuntingPage() {
               </Link>
               <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mt-2">{title}</h1>
               <p className="text-gray-500 text-sm md:text-base mt-3 leading-relaxed">
-                Browse verified vacant homes, bedsitters, studios, one-bedroom houses and apartments in {county}. Nyumbani Hub helps tenants contact trusted landlords directly and avoid scams.
+                Browse verified vacant homes, bedsitters, studios, one-bedroom houses and apartments in {county}. Nyumbani Link helps tenants contact trusted landlords directly and avoid scams.
               </p>
               <div className="flex flex-wrap gap-2 mt-5">
                 <Link to={`/homes?county=${encodeURIComponent(county)}`} className="bg-emerald-600 text-white text-sm font-bold px-5 py-3 rounded-xl">

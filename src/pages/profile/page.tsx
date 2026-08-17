@@ -660,7 +660,7 @@ export default function ProfilePage() {
           {isNewUser && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 space-y-4">
               <div>
-                <h2 className="font-bold text-gray-900 text-lg">Welcome to Nyumbani Hub! 👋</h2>
+                <h2 className="font-bold text-gray-900 text-lg">Welcome to Nyumbani Link! 👋</h2>
                 <p className="text-sm text-gray-500 mt-1">Complete your profile to get started.</p>
               </div>
               <div>
@@ -770,7 +770,7 @@ export default function ProfilePage() {
                         return (
                           <p key={type} className="text-xs font-medium text-amber-600">
                             <i className="ri-calendar-line mr-1"></i>
-                            <span className="capitalize font-semibold">{type}</span>: No subscription date — renew to activate
+                            <span className="capitalize font-semibold">{type}</span>: No subscription date - renew to activate
                           </p>
                         );
                       }
@@ -1007,7 +1007,7 @@ export default function ProfilePage() {
                   {reactivatableTypes.length > 0 && (
                     <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
                       <p className="text-xs font-semibold text-emerald-800 mb-2">Reactivate a previous account</p>
-                      <p className="text-[11px] text-emerald-700 mb-3">These were approved before. Reactivate instantly — no admin approval needed.</p>
+                      <p className="text-[11px] text-emerald-700 mb-3">These were approved before. Reactivate instantly - no admin approval needed.</p>
                       <div className="flex flex-wrap gap-2">
                         {reactivatableTypes.map(type => (
                           <button
@@ -1029,7 +1029,7 @@ export default function ProfilePage() {
                       <p className="text-xs font-semibold text-amber-800 mb-2">Waiting for admin approval</p>
                       {pendingOnly.map(p => (
                         <div key={p.id} className="flex items-center justify-between text-xs text-amber-900 py-1">
-                          <div className="capitalize">{p.account_type}{p.subcategory ? ` — ${p.subcategory}` : ''}</div>
+                          <div className="capitalize">{p.account_type}{p.subcategory ? ` - ${p.subcategory}` : ''}</div>
                           <div className="text-amber-600">{new Date(p.created_at).toLocaleDateString('en-KE')}</div>
                         </div>
                       ))}
@@ -1144,7 +1144,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="font-bold text-gray-900">Business Profile</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">This is what clients see on the services page — separate from your personal profile.</p>
+                  <p className="text-xs text-gray-400 mt-0.5">This is what clients see on the services page - separate from your personal profile.</p>
                 </div>
                 <button
                   onClick={() => { setShowEditBusinessProfile(!showEditBusinessProfile); setEditBusinessName(businessName); }}
@@ -1355,7 +1355,7 @@ export default function ProfilePage() {
 
           {/* Testimonial — all users */}
           <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-            <p className="text-xs font-semibold text-gray-500">Share your experience on Nyumbani Hub</p>
+            <p className="text-xs font-semibold text-gray-500">Share your experience on Nyumbani Link</p>
             {testimonialSuccess && (
               <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
                 <i className="ri-checkbox-circle-line mr-1"></i>Testimonial submitted — it will appear on the home page!
@@ -1364,7 +1364,7 @@ export default function ProfilePage() {
             <textarea
               value={testimonial}
               onChange={e => { if (e.target.value.length <= 300) setTestimonial(e.target.value); }}
-              placeholder={isServiceProvider ? 'Tell clients about your experience offering services on Nyumbani Hub...' : 'Tell others how Nyumbani Hub has helped you market your products or listings...'}
+              placeholder={isServiceProvider ? 'Tell clients about your experience offering services on Nyumbani Link...' : 'Tell others how Nyumbani Link has helped you market your products or listings...'}
               rows={3}
               className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400 resize-none"
             />

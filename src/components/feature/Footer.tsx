@@ -77,7 +77,7 @@ export default function Footer() {
             <Link to="/">
               <img
                 src="https://i.postimg.cc/qM8Nz01k/Untitled-design.png"
-                alt="Nyumbani Hub"
+                alt="Nyumbani Link"
                 className="h-9 w-auto"
               />
             </Link>
@@ -170,7 +170,7 @@ export default function Footer() {
 
       {/* Floating WhatsApp Support Button */}
       <a
-        href="https://wa.me/254703542846?text=Hi Nyumbani Hub, I need help with your platform."
+        href="https://wa.me/254703542846?text=Hi Nyumbani Link, I need help with your platform."
         target="_blank"
         rel="nofollow noreferrer"
         className="fixed bottom-24 md:bottom-8 left-4 w-12 h-12 flex items-center justify-center bg-[#25D366] hover:bg-[#20ba58] text-white rounded-full shadow-lg transition-all cursor-pointer z-40"

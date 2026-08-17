@@ -60,7 +60,7 @@ export default function ListingCard({ listing, promoted = false }: ListingCardPr
     e.stopPropagation();
     const url = `${window.location.origin}/listing/${listing.id}`;
     if (navigator.share) {
-      navigator.share({ title: listing.title, text: `Check out this listing on Nyumbani Hub`, url });
+      navigator.share({ title: listing.title, text: `Check out this listing on Nyumbani Link`, url });
     } else {
       navigator.clipboard.writeText(url);
       alert('Link copied to clipboard!');

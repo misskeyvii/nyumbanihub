@@ -18,7 +18,7 @@ export default function Home() {
     <div className="min-h-screen bg-white font-sans">
       <SEO
         title="Verified Homes, Airbnbs, Services & Marketplace in Kenya"
-        description="Nyumbani Hub (nyumbanilink.com) — Kenya's most trusted platform for verified homes, apartments, Airbnbs, hotels, shops, services and marketplace products. Zero scams, 100% physically verified listings across all 47 counties."
+        description="Nyumbani Link (nyumbanilink.com) - Kenya's most trusted platform for verified homes, apartments, Airbnbs, hotels, shops, services and marketplace products. Zero scams, 100% physically verified listings across all 47 counties."
         path="/"
       />
       <Navbar />

@@ -19,7 +19,7 @@ export default function SignUpPage() {
         <button onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer">
           <img
             src="https://i.postimg.cc/qM8Nz01k/Untitled-design.png"
-            alt="Nyumbani Hub"
+            alt="Nyumbani Link"
             className="h-8 w-auto"
           />
         </button>
@@ -64,7 +64,7 @@ export default function SignUpPage() {
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm font-bold text-gray-800 group-hover:text-emerald-700 transition-colors">Continue with Google</p>
-              <p className="text-xs text-gray-400 mt-0.5">Quick & secure — no password needed</p>
+              <p className="text-xs text-gray-400 mt-0.5">Quick and secure - no password needed</p>
             </div>
             <i className="ri-arrow-right-line text-gray-400 group-hover:text-emerald-600 transition-colors"></i>
           </button>

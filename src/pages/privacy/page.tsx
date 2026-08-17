@@ -8,8 +8,8 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <SEO
-        title="Privacy Policy — Nyumbani Hub"
-        description="Read Nyumbani Hub's privacy policy. Learn how we collect, use and protect your personal data on nyumbanilink.com."
+        title="Privacy Policy — Nyumbani Link"
+        description="Read Nyumbani Link's privacy policy. Learn how we collect, use and protect your personal data on nyumbanilink.com."
         path="/privacy"
       />
       <Navbar />
@@ -21,12 +21,12 @@ export default function PrivacyPolicyPage() {
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-12 space-y-8 text-gray-600 text-sm leading-relaxed">
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">1. Information We Collect</h2>
-            <p>When you register on Nyumbani Hub, we collect your name, email address, phone number, and location (county/area). If you post a listing, we also collect listing details including photos, description, and contact information. We do not collect payment card details — all payments are handled directly between users.</p>
+            <p>When you register on Nyumbani Link, we collect your name, email address, phone number, and location (county/area). If you post a listing, we also collect listing details including photos, description, and contact information. We do not collect payment card details — all payments are handled directly between users.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">2. How We Use Your Information</h2>
             <ul className="list-disc pl-5 space-y-2">
-              <li>To create and manage your Nyumbani Hub account</li>
+              <li>To create and manage your Nyumbani Link account</li>
               <li>To display your listings to potential customers across Kenya</li>
               <li>To verify your identity and business location through our physical verification process</li>
               <li>To send you important updates about your account or listings</li>
@@ -44,23 +44,23 @@ export default function PrivacyPolicyPage() {
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">5. Cookies</h2>
-            <p>Nyumbani Hub uses minimal cookies to keep you logged in and remember your preferences. We do not use tracking cookies for advertising purposes.</p>
+            <p>Nyumbani Link uses minimal cookies to keep you logged in and remember your preferences. We do not use tracking cookies for advertising purposes.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">6. Your Rights</h2>
-            <p>You have the right to access, update, or delete your personal information at any time from your profile page. To permanently delete your account and all associated data, contact us at <span className="text-emerald-600">support@Nyumbani Hub.co.ke</span>.</p>
+            <p>You have the right to access, update, or delete your personal information at any time from your profile page. To permanently delete your account and all associated data, contact us at <span className="text-emerald-600">support@nyumbanilink.com</span>.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">7. Children's Privacy</h2>
-            <p>Nyumbani Hub is not intended for users under the age of 18. We do not knowingly collect information from minors.</p>
+            <p>Nyumbani Link is not intended for users under the age of 18. We do not knowingly collect information from minors.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">8. Changes to This Policy</h2>
-            <p>We may update this Privacy Policy from time to time. We will notify registered users of significant changes via email. Continued use of Nyumbani Hub after changes constitutes acceptance of the updated policy.</p>
+            <p>We may update this Privacy Policy from time to time. We will notify registered users of significant changes via email. Continued use of Nyumbani Link after changes constitutes acceptance of the updated policy.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">9. Contact Us</h2>
-            <p>For any privacy-related questions, contact us at <span className="text-emerald-600">support@Nyumbani Hub.co.ke</span>.</p>
+            <p>For any privacy-related questions, contact us at <span className="text-emerald-600">support@nyumbanilink.com</span>.</p>
           </section>
           <div className="flex gap-4 pt-4 border-t border-gray-100">
             <Link to="/terms" className="text-emerald-600 text-sm hover:underline">Terms of Use</Link>

@@ -21,7 +21,7 @@ export default function NotFound() {
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Page not found</p>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mt-2">We could not find that page</h1>
             <p className="mt-2 text-sm text-gray-500">
-              The link may be broken, moved, or no longer available on Nyumbani Hub.
+              The link may be broken, moved, or no longer available on Nyumbani Link.
             </p>
             <p className="mt-3 text-xs text-gray-400 font-mono break-all">{location.pathname}</p>
             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">

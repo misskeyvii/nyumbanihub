@@ -9,8 +9,8 @@ export default function AntiScamPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <SEO
-        title="Anti-Scam Policy — Nyumbani Hub"
-        description="Nyumbani Hub's anti-scam policy. Every listing is physically verified. Learn how we protect you from fraud and what to do if you encounter a scam on nyumbanilink.com."
+        title="Anti-Scam Policy — Nyumbani Link"
+        description="Nyumbani Link's anti-scam policy. Every listing is physically verified. Learn how we protect you from fraud and what to do if you encounter a scam on nyumbanilink.com."
         path="/anti-scam"
       />
       <Navbar />
@@ -22,7 +22,7 @@ export default function AntiScamPage() {
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-12 space-y-8 text-gray-600 text-sm leading-relaxed">
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">1. Our Verification Process</h2>
-            <p>Every listing on Nyumbani Hub undergoes physical verification. We visit the property/business location, verify documents, and meet the owner before approval. No listing appears without verification badge.</p>
+            <p>Every listing on Nyumbani Link undergoes physical verification. We visit the property/business location, verify documents, and meet the owner before approval. No listing appears without verification badge.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">2. Scam Indicators We Block</h2>
@@ -36,7 +36,7 @@ export default function AntiScamPage() {
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">3. How to Report a Scam</h2>
-            <p>Email <span className="text-emerald-600">report@Nyumbani Hub.co.ke</span> with listing ID, screenshots, and details. Suspicious listings are immediately removed pending investigation.</p>
+            <p>Email <span className="text-emerald-600">report@nyumbanilink.com</span> with listing ID, screenshots, and details. Suspicious listings are immediately removed pending investigation.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">4. Our Guarantees</h2>
@@ -53,7 +53,7 @@ export default function AntiScamPage() {
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">6. Contact Support</h2>
-            <p>For safety concerns: <span className="text-emerald-600">support@Nyumbani Hub.co.ke</span> or call +254-XXX-XXX-XXX.</p>
+            <p>For safety concerns: <span className="text-emerald-600">support@nyumbanilink.com</span>, <span className="text-emerald-600">info@nyumbanilink.com</span> or call <span className="text-emerald-600">0703542846</span>, <span className="text-emerald-600">0788449275</span>.</p>
           </section>
           <div className="flex gap-4 pt-4 border-t border-gray-100">
             <Link to="/privacy" className="text-emerald-600 text-sm hover:underline">Privacy Policy</Link>

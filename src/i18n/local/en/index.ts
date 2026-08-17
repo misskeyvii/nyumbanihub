@@ -15,7 +15,7 @@ const en = {
   // Hero
   heroTitle: 'Find Verified Homes,',
   heroSubtitle: 'Services & Products in Kenya',
-  heroTagline: 'Nyumbani Hub connects you to trusted landlords, businesses, and service providers — all physically verified, zero scams.',
+  heroTagline: 'Nyumbani Link connects you to trusted landlords, businesses, and service providers - all physically verified, zero scams.',
   searchPlaceholder: 'Search homes, shops, services...',
   allCounties: 'All Counties',
   search: 'Search',
@@ -39,7 +39,7 @@ const en = {
   noListings: 'No listings match your filters',
 
   // Listing
-  verifiedBy: 'Verified by Nyumbani Hub',
+  verifiedBy: 'Verified by Nyumbani Link',
   approvedListing: 'Approved listing',
   callNow: 'Call Now',
   whatsapp: 'WhatsApp',

@@ -38,7 +38,7 @@ export default function FeaturedListings() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Latest Listings</h2>
-            <p className="text-gray-500 text-sm mt-1">{listings.length} verified listings live on Nyumbani Hub</p>
+            <p className="text-gray-500 text-sm mt-1">{listings.length} verified listings live on Nyumbani Link</p>
           </div>
           <Link to="/explore" className="hidden sm:inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700 font-medium whitespace-nowrap">
             See All <i className="ri-arrow-right-line text-sm"></i>

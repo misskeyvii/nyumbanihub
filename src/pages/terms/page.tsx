@@ -8,8 +8,8 @@ export default function TermsOfUsePage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <SEO
-        title="Terms of Use — Nyumbani Hub"
-        description="Read Nyumbani Hub's terms of use. Understand your rights and responsibilities when using nyumbanilink.com."
+        title="Terms of Use — Nyumbani Link"
+        description="Read Nyumbani Link's terms of use. Understand your rights and responsibilities when using nyumbanilink.com."
         path="/terms"
       />
       <Navbar />
@@ -21,7 +21,7 @@ export default function TermsOfUsePage() {
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-12 space-y-8 text-gray-600 text-sm leading-relaxed">
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">1. Acceptance of Terms</h2>
-            <p>By accessing or using Nyumbani Hub, you agree to be bound by these Terms of Use, our Privacy Policy, and all applicable laws. If you do not agree, do not use the platform.</p>
+            <p>By accessing or using Nyumbani Link, you agree to be bound by these Terms of Use, our Privacy Policy, and all applicable laws. If you do not agree, do not use the platform.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">2. Account Registration</h2>
@@ -29,7 +29,7 @@ export default function TermsOfUsePage() {
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">3. Listings and Content</h2>
-            <p>You may post verified listings only after physical verification. Listings must be accurate, not misleading. You grant Nyumbani Hub a license to display your content. We may remove violating content.</p>
+            <p>You may post verified listings only after physical verification. Listings must be accurate, not misleading. You grant Nyumbani Link a license to display your content. We may remove violating content.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">4. Prohibited Conduct</h2>
@@ -42,7 +42,7 @@ export default function TermsOfUsePage() {
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">5. Payments and Transactions</h2>
-            <p>Nyumbani Hub facilitates listings but is not party to transactions. Payments are direct between users. We are not liable for disputes or failed deals.</p>
+            <p>Nyumbani Link facilitates listings but is not party to transactions. Payments are direct between users. We are not liable for disputes or failed deals.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">6. Termination</h2>
@@ -50,7 +50,7 @@ export default function TermsOfUsePage() {
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">7. Limitation of Liability</h2>
-            <p>Nyumbani Hub provided "AS IS". We disclaim warranties. Liability limited to fees paid. Not liable for user content or transactions.</p>
+            <p>Nyumbani Link provided "AS IS". We disclaim warranties. Liability limited to fees paid. Not liable for user content or transactions.</p>
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">8. Governing Law</h2>
@@ -58,7 +58,7 @@ export default function TermsOfUsePage() {
           </section>
           <section>
             <h2 className="font-bold text-gray-900 text-lg mb-3">9. Contact Us</h2>
-            <p>Questions? Email <span className="text-emerald-600">support@Nyumbani Hub.co.ke</span>.</p>
+            <p>Questions? Email <span className="text-emerald-600">support@nyumbanilink.com</span>.</p>
           </section>
           <div className="flex gap-4 pt-4 border-t border-gray-100">
             <Link to="/privacy" className="text-emerald-600 text-sm hover:underline">Privacy Policy</Link>

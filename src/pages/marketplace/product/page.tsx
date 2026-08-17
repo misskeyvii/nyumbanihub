@@ -33,7 +33,7 @@ export default function ProductDetailPage() {
   const mapSrc = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
   const whatsappLink = createWhatsAppLink(
     product.shopPhone,
-    `Hi! I saw your product "${product.name}" on Nyumbani Hub and I'm interested.`
+    `Hi! I saw your product "${product.name}" on Nyumbani Link and I'm interested.`
   );
 
   return (

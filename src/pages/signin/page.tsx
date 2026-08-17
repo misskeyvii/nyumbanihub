@@ -67,7 +67,7 @@ export default function SignInPage() {
             <div className="w-12 h-12 flex items-center justify-center bg-emerald-600 rounded-2xl mx-auto mb-3">
               <i className="ri-shield-check-fill text-white text-2xl"></i>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Welcome Back to Nyumbani Hub</h1>
+            <h1 className="text-xl font-bold text-gray-900">Welcome Back to Nyumbani Link</h1>
             <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
           </div>
 

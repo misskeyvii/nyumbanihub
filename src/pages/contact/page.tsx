@@ -34,8 +34,8 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
       <SEO
-        title="Contact Us — Nyumbani Hub Support"
-        description="Get in touch with Nyumbani Hub. Report a scam, get help with your listing, or ask any question. We respond within 24 hours. support@nyumbanilink.com"
+        title="Contact Us - Nyumbani Link Support"
+        description="Get in touch with Nyumbani Link. Report a scam, get help with your listing, or ask any question. We respond within 24 hours. support@nyumbanilink.com"
         path="/contact"
       />
       <Navbar />

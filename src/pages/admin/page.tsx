@@ -494,7 +494,7 @@ export default function AdminPage() {
             <i className="ri-shield-check-fill text-white text-sm"></i>
           </div>
           <div>
-            <h1 className="font-bold text-gray-900 text-sm">Nyumbani Hub Admin</h1>
+            <h1 className="font-bold text-gray-900 text-sm">Nyumbani Link Admin</h1>
             <p className="text-xs text-gray-400">{users.length} users</p>
           </div>
         </div>
