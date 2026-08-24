@@ -53,7 +53,7 @@ const paymentMethods = [
 export default function PosSale() {
   const session = getSession();
   const type = getDemoType();
-  const business = getDemoAccount(type);
+  const session = useSession();
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -164,7 +164,7 @@ export default function PosSale() {
       id: `s-${Date.now()}`,
       receiptNo,
       date: saleDate,
-      cashier: session.name,
+      cashier: session?.name,
       customer: customer.name,
       items: cart.map((line) => ({
         productId: line.item.id,
@@ -190,7 +190,7 @@ export default function PosSale() {
   const buildPayload = (): ReceiptPayload => ({
     receiptNo: receipt?.receiptNo ?? '',
     date: receipt?.date ?? new Date().toISOString(),
-    cashier: session.name,
+    cashier: session?.name,
     customer: receipt?.customer ?? '',
     businessName: business.businessName,
     address: business.address,
@@ -543,7 +543,7 @@ export default function PosSale() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground-950/50 p-4">
           <div className="max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-lg bg-background-50">
             <div className="bg-foreground-950 px-6 py-5 text-center text-background-50">
-              <p className="font-heading text-lg font-bold">{business.businessName}</p>
+              <p className="font-heading text-lg font-bold">{session?.businessName || "Your Business"}</p>
               <p className="mt-0.5 text-xs text-background-50/80">{business.address}</p>
               <p className="text-xs text-background-50/80">{business.phone}</p>
             </div>
@@ -562,7 +562,7 @@ export default function PosSale() {
                 </div>
                 <div className="flex justify-between">
                   <span>Cashier</span>
-                  <span className="font-medium text-foreground-900">{session.name}</span>
+                  <span className="font-medium text-foreground-900">{session?.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Customer</span>

@@ -186,7 +186,7 @@ export default function Login() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  <i className={showPassword ? 'ri-eye-off-line' : 'ri-eye-line'} className="h-5 w-5 text-foreground-400" />
+                  <i className={`${showPassword ? 'ri-eye-off-line' : 'ri-eye-line'} h-5 w-5 text-foreground-400`} />
                 </button>
               </div>
             </div>

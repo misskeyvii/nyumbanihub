@@ -79,7 +79,7 @@ export default function Marketplace() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="font-heading text-2xl font-bold text-foreground-950">{account.businessName}</h1>
+            <h1 className="font-heading text-2xl font-bold text-foreground-950">{session?.businessName || "Your Business"}</h1>
             <span className="rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-bold text-primary-700">
               Multi-vendor Marketplace
             </span>
@@ -171,7 +171,7 @@ export default function Marketplace() {
                       <img
                         src={vendor.image}
                         alt={vendor.name}
-                        title={`${vendor.name} shop on ${account.businessName}`}
+                        title={`${vendor.name} shop on ${session?.businessName || "Your Business"}`}
                         className="h-full w-full object-cover object-top"
                       />
                     </div>
@@ -241,7 +241,7 @@ export default function Marketplace() {
                 <img
                   src={vendor.image}
                   alt={vendor.name}
-                  title={`${vendor.name} shop on ${account.businessName}`}
+                  title={`${vendor.name} shop on ${session?.businessName || "Your Business"}`}
                   className="h-full w-full object-cover object-top"
                 />
               </div>
@@ -328,7 +328,7 @@ export default function Marketplace() {
                   <img
                     src={listing.image}
                     alt={listing.name}
-                    title={`${listing.name} sold by ${listing.vendor} on ${account.businessName}`}
+                    title={`${listing.name} sold by ${listing.vendor} on ${session?.businessName || "Your Business"}`}
                     className="h-full w-full object-cover object-top"
                   />
                 </div>

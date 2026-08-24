@@ -41,8 +41,8 @@ export default function SalesHistory() {
           </h1>
           <p className="mt-1 text-sm text-foreground-500">
             {isStaff
-              ? `Sales recorded under ${session.name} at ${business.businessName}.`
-              : `All sales across ${business.businessName}.`}
+              ? `Sales recorded under ${session?.name} at ${session?.businessName || "Your Business"}.`
+              : `All sales across ${session?.businessName || "Your Business"}.`}
           </p>
         </div>
         <div className="rounded-lg border border-background-200 bg-background-50 px-4 py-3 text-right">

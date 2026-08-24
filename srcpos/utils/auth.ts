@@ -88,8 +88,8 @@ export interface Profile {
   id: string;
   email: string;
   name: string;
-  role: Role;
-  business_type: DemoType;
+  role: 'admin' | 'staff';
+  business_type: string;
   business_id: string | null;
   title: string | null;
   initials: string | null;

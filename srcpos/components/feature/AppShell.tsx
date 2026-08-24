@@ -42,7 +42,7 @@ const hotelStaffNav: NavItem[] = [
   { label: 'My Sales History', icon: 'ri-history-line',       path: '/app/sales-history' },
 ];
 
-function navFor(type: DemoType, role: 'admin' | 'staff'): NavItem[] {
+function navFor(type: string, role: 'admin' | 'staff'): NavItem[] {
   if (role === 'staff') return type === 'hotel' ? hotelStaffNav : staffNav;
   switch (type) {
     case 'hotel':       return hotelNav;
@@ -53,7 +53,7 @@ function navFor(type: DemoType, role: 'admin' | 'staff'): NavItem[] {
   }
 }
 
-const searchPlaceholder: Record<DemoType, string> = {
+const searchPlaceholder: Record<string, string> = {
   shop:        'Search products, sales, customers…',
   hotel:       'Search rooms, bookings, waiters…',
   airbnb:      'Search listings, bookings, guests…',
@@ -67,6 +67,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const session   = getSession();
+  
+  if (!session) {
+    // If no session, redirect to login
+    window.location.href = '/login';
+    return null;
+  }
+  
   const navItems  = navFor(session.type, session.role);
 
   const handleLogout = async () => {
@@ -159,7 +166,7 @@ export default function AppShell() {
   const location  = useLocation();
   const session   = getSession();
   const type      = getDemoType();
-  const admin     = session.role === 'admin';
+  const admin     = session?.role === 'admin';
 
   const [authReady,   setAuthReady]   = useState(false);
   const [mobileOpen,  setMobileOpen]  = useState(false);
@@ -297,7 +304,7 @@ export default function AppShell() {
                 <i className="ri-store-2-line" />
               </span>
               <span className="whitespace-nowrap text-sm font-semibold text-foreground-900">
-                {session.businessName}
+                {session?.businessName || 'Your Business'}
               </span>
             </div>
           )}
@@ -354,11 +361,11 @@ export default function AppShell() {
                 className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-background-100"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary-500 text-sm font-bold text-background-50">
-                  {session.initials}
+                  {session?.initials || 'U'}
                 </span>
                 <span className="hidden text-left md:block">
-                  <span className="block text-sm font-semibold leading-tight text-foreground-900">{session.name}</span>
-                  <span className="block text-[11px] text-foreground-500">{session.title}</span>
+                  <span className="block text-sm font-semibold leading-tight text-foreground-900">{session?.name || 'User'}</span>
+                  <span className="block text-[11px] text-foreground-500">{session?.title || 'Business Owner'}</span>
                 </span>
                 <i className="ri-arrow-down-s-line hidden text-foreground-500 md:block" />
               </button>

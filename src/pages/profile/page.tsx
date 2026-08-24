@@ -39,16 +39,16 @@ export default function ProfilePage() {
   const [requestError, setRequestError] = useState('');
   const [pendingRequests, setPendingRequests] = useState<{ id: string; account_type: string; subcategory?: string; status: string; created_at: string }[]>([]);
   const [showRenew, setShowRenew] = useState(false);
-  const [renewStep, setRenewStep] = useState<'account' | 'months' | 'method' | 'mpesa' | 'airtel' | 'pesapal' | 'waiting'>('account');
+  const [renewStep, setRenewStep] = useState<'account' | 'months' | 'method' | 'intasend' | 'waiting'>('account');
   const [renewPhone, setRenewPhone] = useState('');
   const [renewing, setRenewing] = useState(false);
   const [renewSuccess, setRenewSuccess] = useState(false);
   const [renewAccountType, setRenewAccountType] = useState('');
   const [renewMonths, setRenewMonths] = useState(1);
   const [renewError, setRenewError] = useState('');
+  const [renewPaymentMethod, setRenewPaymentMethod] = useState<'intasend'>('intasend');
   const [renewalId, setRenewalId] = useState<string | null>(null);
-  const [renewPaymentMethod, setRenewPaymentMethod] = useState<'mpesa' | 'airtel' | 'pesapal'>('mpesa');
-  const [pesapalTrackingId, setPesapalTrackingId] = useState<string | null>(null);
+  const [intasendTrackingId, setIntasendTrackingId] = useState<string | null>(null);
   const [approvedTypes, setApprovedTypes] = useState<string[]>([]);
   const [searchParams] = useSearchParams();
   const isNewUser = searchParams.get('new') === 'true';
@@ -88,6 +88,14 @@ export default function ProfilePage() {
   const canRenew = approvedTypes.length > 0 || !!primaryAccountType;
   const isMarketer = userRole === 'marketer';
   const initials = userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+
+  // Pricing structure
+  const BASIC_ACCOUNT_PRICE = 1000; // Homes/Apartments/Airbnb/Hotels/Shops/Marketplace
+  const POS_ADDON_PRICE = 1500; // POS add-on for existing users
+  const POS_STANDALONE_PRICE = 2100; // POS-only users
+
+  // User account status
+  const hasActiveAccount = approvedTypes.length > 0 || !!primaryAccountType;
 
   const pendingOnly = pendingRequests.filter(r => r.status === 'pending');
   const approvedHistoryTypes = Array.from(new Set(
@@ -133,10 +141,10 @@ export default function ProfilePage() {
       attempts += 1;
 
       const { data: statusData, error: statusError } = await supabase.functions.invoke(
-        renewPaymentMethod === 'pesapal' ? 'pesapal-status' : 'check-renewal-payment',
+        renewPaymentMethod === 'intasend' ? 'intasend-status' : 'check-renewal-payment',
         {
-          body: renewPaymentMethod === 'pesapal'
-            ? { renewal_id: renewalId, user_id: session.user.id, order_tracking_id: pesapalTrackingId }
+          body: renewPaymentMethod === 'intasend'
+            ? { renewal_id: renewalId, user_id: session.user.id, order_tracking_id: intasendTrackingId }
             : { renewal_id: renewalId, user_id: session.user.id },
         }
       );
@@ -149,7 +157,7 @@ export default function ProfilePage() {
 
       if (!statusError && statusData?.status === 'failed') {
         setRenewError(statusData.failure_reason || 'Payment failed or was cancelled.');
-        setRenewStep(renewPaymentMethod === 'pesapal' ? 'method' : renewPaymentMethod);
+        setRenewStep(renewPaymentMethod === 'intasend' ? 'method' : renewPaymentMethod);
         setRenewalId(null);
         return true;
       }
@@ -240,11 +248,11 @@ export default function ProfilePage() {
       setApprovedTypes(types);
       if (types.length > 0) setRenewAccountType(types[0]);
 
-      // Handle Pesapal callback redirect
+      // Handle IntaSend callback redirect
       if (renewalFromCallback) {
         setRenewalId(renewalFromCallback);
-        if (trackingFromCallback) setPesapalTrackingId(trackingFromCallback);
-        setRenewPaymentMethod('pesapal');
+        if (trackingFromCallback) setIntasendTrackingId(trackingFromCallback);
+        setRenewPaymentMethod('intasend');
         setShowRenew(true);
         setRenewStep('waiting');
       }
@@ -503,13 +511,13 @@ export default function ProfilePage() {
 
   const renewAmount = (PRICING[renewAccountType] || 500) * renewMonths;
 
-  const handlePesapalRenew = async () => {
+  const handleIntasendRenew = async () => {
     setRenewing(true);
     setRenewError('');
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { setRenewing(false); return; }
     try {
-      const { data, error } = await supabase.functions.invoke('pesapal-initiate', {
+      const { data, error } = await supabase.functions.invoke('intasend-initiate', {
         body: {
           amount: renewAmount,
           account_type: renewAccountType,
@@ -520,60 +528,13 @@ export default function ProfilePage() {
         },
       });
       if (error || !data?.redirect_url) {
-        setRenewError(error?.message || data?.error || 'Could not start Pesapal payment.');
+        setRenewError(error?.message || data?.error || 'Could not start IntaSend payment.');
         setRenewing(false);
         return;
       }
       setRenewalId(data.renewal_id ?? null);
-      setPesapalTrackingId(data.order_tracking_id ?? null);
+      setIntasendTrackingId(data.order_tracking_id ?? null);
       window.open(data.redirect_url, '_blank');
-      setRenewStep('waiting');
-    } catch {
-      setRenewError('Something went wrong. Please try again.');
-    }
-    setRenewing(false);
-  };
-
-  const handleRenew = async () => {
-    if (!renewPhone.trim()) return;
-    setRenewing(true);
-    setRenewError('');
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setRenewing(false); return; }
-
-    const paymentMethod = renewStep === 'airtel' ? 'airtel' : 'mpesa';
-    setRenewPaymentMethod(paymentMethod);
-
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        paymentMethod === 'mpesa' ? 'mpesa-stk' : 'airtel-stk',
-        {
-          body: {
-            phone: renewPhone.trim(),
-            amount: renewAmount,
-            account_ref: `${session.user.id.slice(0, 8)}-${renewAccountType}`,
-            user_id: session.user.id,
-            months: renewMonths,
-            account_type: renewAccountType,
-            user_name: displayName,
-            user_email: session.user.email,
-          },
-        }
-      );
-
-      if (error) {
-        setRenewError(error.message || 'Could not start payment. Please try again.');
-        setRenewing(false);
-        return;
-      }
-
-      if (!data?.success) {
-        setRenewError(data?.message || 'Payment could not be started. Please try again.');
-        setRenewing(false);
-        return;
-      }
-
-      setRenewalId(data.renewal_id ?? null);
       setRenewStep('waiting');
     } catch {
       setRenewError('Something went wrong. Please try again.');
@@ -973,10 +934,9 @@ export default function ProfilePage() {
                 );
               } else {
                 // User needs to subscribe to POS
-                const pricing = posEligibility.pricing || (posEligibility.hasActiveAccount ? 1500 : 2100);
-                const pricingText = posEligibility.hasActiveAccount 
-                  ? `KSh 1,500/month (Add-on)` 
-                  : `KSh 2,100/month (Standalone)`;
+                const pricingText = hasActiveAccount 
+                  ? `KSh ${(BASIC_ACCOUNT_PRICE + POS_ADDON_PRICE).toLocaleString()}/month (Add-on to existing account)` 
+                  : `KSh ${POS_STANDALONE_PRICE.toLocaleString()}/month (Standalone POS)`;
                 
                 return (
                   <div className="bg-white border border-gray-200 rounded-2xl p-6">
@@ -988,7 +948,7 @@ export default function ProfilePage() {
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-bold text-gray-900 text-lg">Nyumbani Link POS</h3>
                           <span className="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                            {posEligibility.hasActiveAccount ? 'Add-on' : 'Standalone'}
+                            {hasActiveAccount ? 'Add-on' : 'Standalone'}
                           </span>
                         </div>
                         <p className="text-gray-600 text-sm">
@@ -1001,7 +961,7 @@ export default function ProfilePage() {
                           <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Customer Management</span>
                           <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full">Reports</span>
                         </div>
-                        {!posEligibility.hasActiveAccount && (
+                        {!hasActiveAccount && (
                           <p className="text-amber-600 text-xs mt-2 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1">
                             <i className="ri-information-line mr-1"></i>
                             Includes basic business account access
@@ -1013,8 +973,8 @@ export default function ProfilePage() {
                       <button 
                         onClick={() => {
                           // Set POS subscription parameters with new pricing
-                          const posAccountType = posEligibility.hasActiveAccount 
-                            ? `${posEligibility.accountType}-pos` 
+                          const posAccountType = hasActiveAccount 
+                            ? `${primaryAccountType}-pos` 
                             : 'pos-only';
                           setRenewAccountType(posAccountType);
                           setShowRenew(true);
@@ -1531,23 +1491,23 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* WAITING FOR PIN / PESAPAL */}
+            {/* WAITING FOR PIN / INTASEND */}
             {!renewSuccess && renewStep === 'waiting' && (
               <div className="text-center py-4 space-y-4">
-                {renewPaymentMethod === 'pesapal' ? (
+                {renewPaymentMethod === 'intasend' ? (
                   <>
-                    <div className="w-14 h-14 flex items-center justify-center bg-[#1a1a2e]/10 rounded-full mx-auto">
-                      <div className="w-8 h-8 border-2 border-[#1a1a2e] border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-14 h-14 flex items-center justify-center bg-blue-100 rounded-full mx-auto">
+                      <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                     <p className="font-bold text-gray-900">Complete Payment in New Tab</p>
-                    <p className="text-sm text-gray-500">A Pesapal payment page has opened in a new tab. Complete your payment there, then come back here.</p>
-                    <div className="bg-[#1a1a2e]/10 border border-[#1a1a2e]/20 rounded-xl p-4 text-left space-y-2">
+                    <p className="text-sm text-gray-500">An IntaSend payment page has opened in a new tab. Complete your payment there, then come back here.</p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-left space-y-2">
                       <p className="text-xs font-bold text-gray-700">KSh {renewAmount.toLocaleString()} · {renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType}</p>
                       <p className="text-xs text-gray-400">This page will update automatically once payment is confirmed.</p>
                     </div>
                     <button
-                      onClick={handlePesapalRenew}
-                      className="w-full text-sm font-semibold text-[#1a1a2e] border border-[#1a1a2e]/30 py-2.5 rounded-xl hover:bg-[#1a1a2e]/5 transition-colors cursor-pointer"
+                      onClick={handleIntasendRenew}
+                      className="w-full text-sm font-semibold text-blue-600 border border-blue-300 py-2.5 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer"
                     >
                       <i className="ri-external-link-line mr-1"></i>Reopen Payment Page
                     </button>
@@ -1595,7 +1555,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {renewStep !== 'account' && (
-                      <button onClick={() => setRenewStep(renewStep === 'months' ? 'account' : renewStep === 'method' ? 'months' : renewStep === 'mpesa' ? 'method' : renewStep === 'airtel' ? 'method' : renewStep === 'pesapal' ? 'method' : 'account')} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer">
+                      <button onClick={() => setRenewStep(renewStep === 'months' ? 'account' : renewStep === 'method' ? 'months' : 'account')} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer">
                         <i className="ri-arrow-left-s-line text-gray-600"></i>
                       </button>
                     )}
@@ -1603,9 +1563,7 @@ export default function ProfilePage() {
                       {renewStep === 'account' && (renewAccountType?.includes('-pos') ? 'POS Subscription' : 'Select Account to Renew')}
                       {renewStep === 'months' && 'How Many Months?'}
                       {renewStep === 'method' && 'Payment Method'}
-                      {renewStep === 'mpesa' && 'Pay via M-Pesa'}
-                      {renewStep === 'airtel' && 'Pay via Airtel Money'}
-                      {renewStep === 'pesapal' && 'Pay via Pesapal'}
+                      {renewStep === 'intasend' && 'Pay via IntaSend'}
                     </h2>
                   </div>
                   <button onClick={() => setShowRenew(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer">
@@ -1735,138 +1693,57 @@ export default function ProfilePage() {
                   <div className="space-y-3">
                     <p className="text-xs text-gray-400">Total: <strong className="text-gray-900">KSh {renewAmount.toLocaleString()}</strong> for {renewMonths} month{renewMonths > 1 ? 's' : ''}</p>
                     <button
-                      onClick={() => { setRenewStep('mpesa'); setRenewPaymentMethod('mpesa'); setRenewError(''); }}
-                      className="w-full flex items-center gap-3 bg-gray-100 text-gray-400 font-bold text-sm px-4 py-4 rounded-xl cursor-not-allowed relative"
-                      disabled
-                    >
-                      <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
-                        <img src="https://i.postimg.cc/nrmPqSKD/mpesa-seeklogo.png" alt="M-Pesa" className="w-8 h-auto object-contain opacity-40" />
-                      </div>
-                      <div className="text-left flex-1">
-                        <p className="font-bold text-base">M-Pesa</p>
-                        <p className="text-xs text-gray-400">Coming soon</p>
-                      </div>
-                      <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Soon</span>
-                    </button>
-                    <button
-                      onClick={() => { setRenewStep('airtel'); setRenewPaymentMethod('airtel'); setRenewError(''); }}
-                      className="w-full flex items-center gap-3 bg-gray-100 text-gray-400 font-bold text-sm px-4 py-4 rounded-xl cursor-not-allowed relative"
-                      disabled
-                    >
-                      <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
-                        <img src="https://i.postimg.cc/VLc73RBp/airtel-money-tanzania-seeklogo.png" alt="Airtel Money" className="w-8 h-auto object-contain opacity-40" />
-                      </div>
-                      <div className="text-left flex-1">
-                        <p className="font-bold text-base">Airtel Money</p>
-                        <p className="text-xs text-gray-400">Coming soon</p>
-                      </div>
-                      <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Soon</span>
-                    </button>
-                    <button
-                      onClick={() => { setRenewStep('pesapal'); setRenewPaymentMethod('pesapal'); setRenewError(''); }}
+                      onClick={() => { setRenewStep('intasend'); setRenewPaymentMethod('intasend'); setRenewError(''); }}
                       className="w-full flex items-center gap-3 bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-900 font-bold text-sm px-4 py-4 rounded-xl transition-colors cursor-pointer"
                     >
                       <div className="w-10 h-10 flex items-center justify-center bg-white rounded-lg flex-shrink-0">
-                        <img src="https://i.postimg.cc/qMVd9KMK/pesapal-logo.png" alt="Pesapal" className="w-8 h-auto object-contain" />
+                        <img src="https://i.postimg.cc/44JYz1PH/intasend-logo.png" alt="IntaSend" className="w-8 h-auto object-contain" />
                       </div>
                       <div className="text-left flex-1">
-                        <p className="font-bold text-base">Pesapal</p>
+                        <p className="font-bold text-base">IntaSend</p>
                         <p className="text-xs text-gray-500">Card, M-Pesa, Airtel · Secure checkout</p>
                       </div>
                       <i className="ri-arrow-right-s-line text-xl text-gray-400"></i>
                     </button>
                     <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-1">
                       <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5"><i className="ri-information-line text-emerald-500"></i> How it works</p>
-                      <p className="text-xs text-gray-400">1. Click Pesapal below to open the secure payment page</p>
-                      <p className="text-xs text-gray-400">2. Pay via M-Pesa, Airtel or card on Pesapal's page</p>
+                      <p className="text-xs text-gray-400">1. Click IntaSend below to open the secure payment page</p>
+                      <p className="text-xs text-gray-400">2. Pay via M-Pesa, Airtel or card on IntaSend's page</p>
                       <p className="text-xs text-gray-400">3. Come back here — your account renews automatically</p>
                     </div>
                   </div>
                 )}
 
-                {/* STEP 4b — Pesapal redirect */}
-                {renewStep === 'pesapal' && (
+                {/* STEP 4b — IntaSend redirect */}
+                {renewStep === 'intasend' && (
                   <div className="space-y-4">
-                    <div className="bg-[#1a1a2e]/10 border border-[#1a1a2e]/20 rounded-xl p-3">
-                      <p className="text-xs font-bold text-gray-700">Amount: <span className="text-[#1a1a2e]">KSh {renewAmount.toLocaleString()}</span></p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                      <p className="text-xs font-bold text-gray-700">Amount: <span className="text-blue-600">KSh {renewAmount.toLocaleString()}</span></p>
                       <p className="text-xs text-gray-500 mt-0.5">{renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType} account</p>
                     </div>
                     {renewError && (
                       <p className="text-xs text-rose-500 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{renewError}</p>
                     )}
                     <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-1">
-                      <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5"><i className="ri-information-line text-emerald-500"></i> How Pesapal works</p>
+                      <p className="text-xs font-semibold text-gray-600 flex items-center gap-1.5"><i className="ri-information-line text-emerald-500"></i> How IntaSend works</p>
                       <p className="text-xs text-gray-400">1. Click the button below — a new tab opens</p>
-                      <p className="text-xs text-gray-400">2. Complete payment on the Pesapal page (card, M-Pesa, etc.)</p>
+                      <p className="text-xs text-gray-400">2. Complete payment on the IntaSend page (card, M-Pesa, etc.)</p>
                       <p className="text-xs text-gray-400">3. Come back here — your account renews automatically</p>
                     </div>
                     <button
-                      onClick={handlePesapalRenew}
+                      onClick={handleIntasendRenew}
                       disabled={renewing}
                       className={`w-full font-bold text-sm py-4 rounded-xl transition-all bg-white border-2 border-gray-200 hover:border-gray-300 text-gray-900 shadow-sm ${renewing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       {renewing ? (
                         <span className="flex items-center justify-center gap-2">
-                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
-                          Opening Pesapal...
+                          <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin inline-block"></span>
+                          Opening IntaSend...
                         </span>
                       ) : (
                         <span className="flex items-center justify-center gap-2">
                           <i className="ri-external-link-line"></i>
-                          Pay KSh {renewAmount.toLocaleString()} via Pesapal
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                )}
-
-                {/* STEP 4 — Enter phone & trigger STK */}
-                {(renewStep === 'mpesa' || renewStep === 'airtel') && (
-                  <div className="space-y-4">
-                    <div className={`rounded-xl p-3 ${
-                      renewStep === 'mpesa' ? 'bg-[#00A550]/10 border border-[#00A550]/20' : 'bg-[#E40000]/10 border border-[#E40000]/20'
-                    }`}>
-                      <p className="text-xs font-bold text-gray-700">Amount: <span className={renewStep === 'mpesa' ? 'text-[#00A550]' : 'text-[#E40000]'}>KSh {renewAmount.toLocaleString()}</span></p>
-                      <p className="text-xs text-gray-500 mt-0.5">{renewMonths} month{renewMonths > 1 ? 's' : ''} · {renewAccountType} account</p>
-                    </div>
-                    {renewError && (
-                      <p className="text-xs text-rose-500 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{renewError}</p>
-                    )}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1.5">
-                        Your {renewStep === 'mpesa' ? 'M-Pesa' : 'Airtel Money'} Number *
-                      </label>
-                      <input
-                        value={renewPhone}
-                        onChange={e => setRenewPhone(e.target.value)}
-                        type="tel"
-                        placeholder="e.g. 0712345678"
-                        className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-emerald-400"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">A payment prompt will be sent to this number. Enter your PIN to pay.</p>
-                    </div>
-                    <button
-                      onClick={handleRenew}
-                      disabled={!renewPhone.trim() || renewing}
-                      className={`w-full font-bold text-sm py-4 rounded-xl transition-all ${
-                        renewStep === 'mpesa'
-                          ? 'bg-[#00A550] hover:bg-[#008f45] text-white shadow-lg shadow-[#00A550]/30'
-                          : 'bg-[#E40000] hover:bg-[#cc0000] text-white shadow-lg shadow-[#E40000]/30'
-                      } ${!renewPhone.trim() || renewing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      {renewing ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
-                          Submitting...
-                        </span>
-                      ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          <img
-                            src={renewStep === 'mpesa' ? 'https://i.postimg.cc/nrmPqSKD/mpesa-seeklogo.png' : 'https://i.postimg.cc/VLc73RBp/airtel-money-tanzania-seeklogo.png'}
-                            alt={renewStep === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}
-                            className="w-5 h-5 object-contain flex-shrink-0"
-                          />
-                          <span>Pay KSh {renewAmount.toLocaleString()} via {renewStep === 'mpesa' ? 'M-Pesa' : 'Airtel Money'}</span>
+                          Pay KSh {renewAmount.toLocaleString()} via IntaSend
                         </span>
                       )}
                     </button>
@@ -1920,6 +1797,336 @@ export default function ProfilePage() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Renewal Modal */}
+      {showRenew && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4">
+            {renewStep === 'account' && (
+              <>
+                <div className="text-center">
+                  <div className="w-12 h-12 flex items-center justify-center bg-emerald-100 rounded-full mx-auto mb-3">
+                    <i className="ri-vip-crown-line text-emerald-600 text-xl"></i>
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-base">
+                    {renewAccountType?.includes('pos') ? 'Subscribe to POS' : 'Renew Subscription'}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Choose your subscription duration
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {[1, 3, 6, 12].map(months => {
+                    // Calculate price based on account type
+                    const getPrice = () => {
+                      if (renewAccountType?.includes('pos')) {
+                        return hasActiveAccount ? (BASIC_ACCOUNT_PRICE + POS_ADDON_PRICE) : POS_STANDALONE_PRICE;
+                      }
+                      return BASIC_ACCOUNT_PRICE; // Basic account renewal
+                    };
+                    
+                    const price = getPrice() * months;
+                    const discount = months >= 12 ? 0.85 : months >= 6 ? 0.9 : 1;
+                    const finalPrice = Math.round(price * discount);
+                    
+                    return (
+                      <button
+                        key={months}
+                        onClick={() => setRenewMonths(months)}
+                        className={`w-full p-4 rounded-xl border-2 transition-colors text-left ${
+                          renewMonths === months 
+                            ? 'border-emerald-600 bg-emerald-50' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-900">{months} Month{months > 1 ? 's' : ''}</span>
+                          <div className="text-right">
+                            {discount < 1 && (
+                              <div className="text-xs text-gray-500 line-through">KSh {price.toLocaleString()}</div>
+                            )}
+                            <span className="text-emerald-600 font-bold">
+                              KSh {finalPrice.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        {months >= 6 && (
+                          <span className="text-xs text-emerald-600 mt-1 block">
+                            {months === 6 ? '10% discount' : '15% discount'}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowRenew(false)}
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setRenewStep('method')}
+                    className="flex-1 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </>
+            )}
+
+            {renewStep === 'method' && (
+              <>
+                <div className="text-center">
+                  <div className="w-12 h-12 flex items-center justify-center bg-emerald-100 rounded-full mx-auto mb-3">
+                    <i className="ri-bank-card-line text-emerald-600 text-xl"></i>
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-base">Choose Payment Method</h2>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {(() => {
+                      const getPrice = () => {
+                        if (renewAccountType?.includes('pos')) {
+                          return hasActiveAccount ? (BASIC_ACCOUNT_PRICE + POS_ADDON_PRICE) : POS_STANDALONE_PRICE;
+                        }
+                        return BASIC_ACCOUNT_PRICE;
+                      };
+                      const price = getPrice() * renewMonths;
+                      const discount = renewMonths >= 12 ? 0.85 : renewMonths >= 6 ? 0.9 : 1;
+                      const finalPrice = Math.round(price * discount);
+                      return `Total: KSh ${finalPrice.toLocaleString()} for ${renewMonths} month${renewMonths > 1 ? 's' : ''}`;
+                    })()}
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setRenewPaymentMethod('intasend')}
+                    className={`w-full p-4 rounded-xl border-2 transition-colors text-left ${
+                      renewPaymentMethod === 'intasend'
+                        ? 'border-blue-600 bg-blue-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 flex items-center justify-center bg-blue-100 rounded-lg">
+                        <i className="ri-bank-card-line text-blue-600"></i>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">Card Payment</p>
+                        <p className="text-xs text-gray-500">Visa, Mastercard, M-Pesa</p>
+                      </div>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Available Now</span>
+                    </div>
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setRenewStep('account')}
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setRenewStep('intasend')}
+                    className="flex-1 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+                  >
+                    Continue to Payment
+                  </button>
+                </div>
+              </>
+            )}
+
+            {renewStep === 'intasend' && (
+              <>
+                <div className="text-center">
+                  <div className="w-12 h-12 flex items-center justify-center bg-blue-100 rounded-full mx-auto mb-3">
+                    <i className="ri-bank-card-line text-blue-600 text-xl"></i>
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-base">IntaSend Payment</h2>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {(() => {
+                      const getPrice = () => {
+                        if (renewAccountType?.includes('pos')) {
+                          return hasActiveAccount ? (BASIC_ACCOUNT_PRICE + POS_ADDON_PRICE) : POS_STANDALONE_PRICE;
+                        }
+                        return BASIC_ACCOUNT_PRICE;
+                      };
+                      const price = getPrice() * renewMonths;
+                      const discount = renewMonths >= 12 ? 0.85 : renewMonths >= 6 ? 0.9 : 1;
+                      const finalPrice = Math.round(price * discount);
+                      return `You'll be redirected to IntaSend to complete your payment of KSh ${finalPrice.toLocaleString()}`;
+                    })()}
+                  </p>
+                  
+                  {/* IntaSend Trust Badge */}
+                  <div className="mt-4 text-center">
+                    <a href="https://intasend.com/security" target="_blank" rel="noopener noreferrer">
+                      <img 
+                        src="https://intasend-prod-static.s3.amazonaws.com/img/trust-badges/intasend-trust-badge-with-mpesa-hr-light.png" 
+                        width="375" 
+                        alt="IntaSend Secure Payments (PCI-DSS Compliant)"
+                        className="mx-auto max-w-full h-auto"
+                      />
+                    </a>
+                    <a 
+                      href="https://intasend.com/security" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block text-gray-600 text-xs mt-2 hover:text-blue-600 transition-colors"
+                    >
+                      <strong>Secured by IntaSend Payments</strong>
+                    </a>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setRenewStep('method')}
+                    disabled={renewing}
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setRenewing(true);
+                      setRenewError('');
+                      
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) throw new Error('Not authenticated');
+
+                        // Calculate amount based on account type
+                        const getPrice = () => {
+                          if (renewAccountType?.includes('pos')) {
+                            return hasActiveAccount ? (BASIC_ACCOUNT_PRICE + POS_ADDON_PRICE) : POS_STANDALONE_PRICE;
+                          }
+                          return BASIC_ACCOUNT_PRICE;
+                        };
+                        
+                        const baseAmount = getPrice() * renewMonths;
+                        const discount = renewMonths >= 12 ? 0.85 : renewMonths >= 6 ? 0.9 : 1;
+                        const amount = Math.round(baseAmount * discount);
+                        
+                        const posAccountType = renewAccountType || (hasActiveAccount 
+                          ? `${primaryAccountType}-pos` 
+                          : 'pos-only');
+
+                        const supabaseUrl = 'https://fohpbqxpjrknaiqfvlgv.supabase.co';
+                        const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvaHBicXhwanJrbmFpcWZ2bGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDE1NDMsImV4cCI6MjA5MzAxNzU0M30.jgaqpuuyHJgz4xGnDM2nOUo1zLPDGMRi09j_dTTk6Do';
+                        
+                        const response = await fetch(`${supabaseUrl}/functions/v1/intasend-initiate`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                            'apikey': anonKey,
+                          },
+                          body: JSON.stringify({
+                            amount,
+                            currency: 'KES',
+                            account_type: posAccountType,
+                            months: renewMonths,
+                            user_id: session.user.id,
+                            user_name: displayName,
+                            user_email: session.user.email,
+                          })
+                        });
+
+                        const responseData = await response.json();
+                        console.log('Raw response:', response.status, responseData);
+
+                        if (!response.ok) {
+                          throw new Error(responseData.error || responseData.details || JSON.stringify(responseData) || 'Payment initiation failed');
+                        }
+
+                        const data = responseData;
+                        
+                        if (data?.checkout_url) {
+                          setRenewalId(data.renewal_id);
+                          setIntasendTrackingId(data.order_tracking_id);
+                          window.location.href = data.checkout_url;
+                        } else {
+                          throw new Error('No checkout URL received');
+                        }
+                      } catch (error: any) {
+                        const errorMsg = error?.message || error?.data?.error || error?.details || JSON.stringify(error) || 'Payment initiation failed';
+                        console.error('Renewal error:', error);
+                        console.error('Error data:', error?.data);
+                        setRenewError(errorMsg);
+                        setRenewing(false);
+                      }
+                    }}
+                    disabled={renewing}
+                    className="flex-1 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {renewing ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-green-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-green-400">Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="ri-external-link-line"></i>
+                        Pay with IntaSend
+                      </>
+                    )}
+                  </button>
+                </div>
+                {renewError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+                    <p className="text-sm text-rose-600">{renewError}</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {renewStep === 'waiting' && (
+              <>
+                <div className="text-center">
+                  <div className="w-12 h-12 flex items-center justify-center bg-blue-100 rounded-full mx-auto mb-3">
+                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-base">Processing Payment</h2>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Please wait while we confirm your payment...
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowRenew(false)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+              </>
+            )}
+
+            {renewSuccess && (
+              <>
+                <div className="text-center">
+                  <div className="w-12 h-12 flex items-center justify-center bg-emerald-100 rounded-full mx-auto mb-3">
+                    <i className="ri-check-line text-emerald-600 text-xl"></i>
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-base">Payment Successful!</h2>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Your POS subscription has been activated.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowRenew(false);
+                    setRenewSuccess(false);
+                    setRenewStep('account');
+                    window.location.reload();
+                  }}
+                  className="w-full px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+                >
+                  Continue
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

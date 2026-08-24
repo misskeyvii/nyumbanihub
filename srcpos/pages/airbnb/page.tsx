@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getDemoType } from '@/utils/session';
+import { getDemoType, useSession } from '@/utils/session';
 import {
   airbnbListings,
   airbnbBookings,
@@ -78,7 +78,7 @@ export default function Airbnb() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="font-heading text-2xl font-bold text-foreground-950">{account.businessName}</h1>
+            <h1 className="font-heading text-2xl font-bold text-foreground-950">{session?.businessName || 'Your Airbnb Business'}</h1>
             <span className="rounded-full bg-secondary-100 px-2.5 py-0.5 text-xs font-bold text-secondary-800">Airbnb</span>
           </div>
           <p className="mt-1 text-sm text-foreground-500">

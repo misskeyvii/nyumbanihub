@@ -50,10 +50,10 @@ export default function Dashboard() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-heading text-2xl font-bold text-foreground-950">
-            Good morning, {session.name.split(' ')[0]} 👋
+            Good morning, {session?.name.split(' ')[0]} 👋
           </h1>
           <p className="mt-1 text-sm text-foreground-500">
-            Here's what's happening at {business.businessName} today.
+            Here's what's happening at {session?.businessName || "Your Business"} today.
           </p>
         </div>
         <Link
