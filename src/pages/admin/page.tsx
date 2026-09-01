@@ -870,37 +870,39 @@ export default function AdminPage() {
                     )}
                   </div>
 
-                  {/* Save Changes Button */}
-                  {editingUsers[u.id] && Object.keys(editingUsers[u.id]).length > 0 && (
-                    <div className="border-t border-gray-50 pt-3">
-                      <button
-                        onClick={() => saveUserChanges(u.id)}
-                        disabled={savingUserId === u.id}
-                        className="w-full text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {savingUserId === u.id ? (
-                          <>
-                            <i className="ri-loader-4-line animate-spin mr-2"></i>
-                            Saving Changes...
-                          </>
-                        ) : (
-                          <>
-                            <i className="ri-save-line mr-2"></i>
-                            Save Changes
-                          </>
-                        )}
-                      </button>
-                      <p className="text-xs text-gray-400 mt-2 text-center">
-                        You have unsaved changes to this user's profile
-                      </p>
-                    </div>
-                  )}
+                  {/* Action Buttons: Save Changes & Reset Password */}
+                  <div className="border-t border-gray-50 pt-3 space-y-3">
+                    {/* Save Changes Button - only shows when there are unsaved changes */}
+                    {editingUsers[u.id] && Object.keys(editingUsers[u.id]).length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => saveUserChanges(u.id)}
+                          disabled={savingUserId === u.id}
+                          className="w-full text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {savingUserId === u.id ? (
+                            <>
+                              <i className="ri-loader-4-line animate-spin"></i>
+                              Saving Changes...
+                            </>
+                          ) : (
+                            <>
+                              <i className="ri-save-line"></i>
+                              Save Changes
+                            </>
+                          )}
+                        </button>
+                        <p className="text-xs text-gray-400 mt-1.5 text-center">
+                          You have unsaved changes to this user's profile
+                        </p>
+                      </div>
+                    )}
 
-                  {/* Reset Password — separate section with confirm */}
-                  <div className="border-t border-gray-50 pt-3">
-                    <label className="text-[10px] font-semibold text-gray-400 block mb-1.5">
-                      <i className="ri-lock-password-line mr-1"></i>Reset Password
-                    </label>
+                    {/* Reset Password Section */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-400 block mb-1.5">
+                        <i className="ri-lock-password-line mr-1"></i>Reset Password
+                      </label>
                     {resetSuccess === u.id ? (
                       <p className="text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">
                         <i className="ri-checkbox-circle-line mr-1"></i>Reset email sent to {u.email}
@@ -926,6 +928,7 @@ export default function AdminPage() {
                       </div>
                     )}
                     <p className="text-[10px] text-gray-400 mt-1">A reset link will be emailed to the user. You won't see their new password.</p>
+                    </div>
                   </div>
                 </>
               )}
