@@ -35,7 +35,12 @@ type PendingRequest = {
   created_at: string;
 };
 
-const accountTypes = ['landlord', 'airbnb', 'hotel', 'shop', 'marketplace', 'service', 'entertainment'];
+const accountTypes = [
+  'landlord', 'airbnb', 'hotel', 'shop', 'marketplace', 'service', 'entertainment',
+  // POS account types
+  'landlord-pos', 'airbnb-pos', 'hotel-pos', 'shop-pos', 'marketplace-pos', 'service-pos', 'entertainment-pos',
+  'pos-only' // Standalone POS without other account type
+];
 
 type RenewalTransaction = {
   id: string;
