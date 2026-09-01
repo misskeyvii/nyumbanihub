@@ -426,9 +426,38 @@ export default function AdminPage() {
     fetchUsers();
   };
 
-  const updateField = async (id: string, field: string, value: string | boolean) => {
-    await supabaseAdmin.from('users').update({ [field]: value }).eq('id', id);
+  const [editingUsers, setEditingUsers] = useState<{ [id: string]: Partial<User> }>({});
+  const [savingUserId, setSavingUserId] = useState<string | null>(null);
+
+  const updateField = (id: string, field: string, value: string | boolean) => {
+    // Update local state immediately for UI responsiveness
     setUsers(users.map(u => u.id === id ? { ...u, [field]: value } : u));
+    // Track that this user has unsaved changes
+    setEditingUsers(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value }
+    }));
+  };
+
+  const saveUserChanges = async (userId: string) => {
+    const changes = editingUsers[userId];
+    if (!changes || Object.keys(changes).length === 0) return;
+    
+    setSavingUserId(userId);
+    try {
+      await supabaseAdmin.from('users').update(changes).eq('id', userId);
+      // Clear the editing state for this user
+      setEditingUsers(prev => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+      alert('Changes saved successfully!');
+    } catch (error: any) {
+      alert('Failed to save changes: ' + error.message);
+    } finally {
+      setSavingUserId(null);
+    }
   };
 
   const toggleActive = async (u: User) => {
@@ -838,6 +867,32 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Save Changes Button */}
+                  {editingUsers[u.id] && Object.keys(editingUsers[u.id]).length > 0 && (
+                    <div className="border-t border-gray-50 pt-3">
+                      <button
+                        onClick={() => saveUserChanges(u.id)}
+                        disabled={savingUserId === u.id}
+                        className="w-full text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {savingUserId === u.id ? (
+                          <>
+                            <i className="ri-loader-4-line animate-spin mr-2"></i>
+                            Saving Changes...
+                          </>
+                        ) : (
+                          <>
+                            <i className="ri-save-line mr-2"></i>
+                            Save Changes
+                          </>
+                        )}
+                      </button>
+                      <p className="text-xs text-gray-400 mt-2 text-center">
+                        You have unsaved changes to this user's profile
+                      </p>
+                    </div>
+                  )}
 
                   {/* Reset Password — separate section with confirm */}
                   <div className="border-t border-gray-50 pt-3">
