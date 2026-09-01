@@ -372,8 +372,8 @@ export default function AppShell() {
               {profileOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-background-200 bg-background-50 p-1.5 shadow-lg">
                   <div className="border-b border-background-200 px-3 py-2.5">
-                    <p className="text-sm font-semibold text-foreground-950">{session.name}</p>
-                    <p className="text-xs text-foreground-500">{session.email}</p>
+                    <p className="text-sm font-semibold text-foreground-950">{session?.name || 'User'}</p>
+                    <p className="text-xs text-foreground-500">{session?.email || ''}</p>
                   </div>
                   <a
                     href="/profile"

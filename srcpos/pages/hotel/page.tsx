@@ -24,8 +24,8 @@ const bookingTone: Record<string, string> = {
 };
 
 export default function Hotel() {
-  const session = useSession();
   const [tab, setTab] = useState<Tab>('overview');
+  const session = { businessName: 'Your Business' };
 
   const available = hotelRooms.filter((room) => room.status === 'Available').length;
   const occupied = hotelRooms.filter((room) => room.status === 'Occupied').length;

@@ -28,7 +28,7 @@ const paymentTones: Record<string, string> = {
 
 export default function Dashboard() {
   const [paymentFilter, setPaymentFilter] = useState('All');
-  const session = useSession();
+  const session = { name: 'User', businessName: 'Your Business' };
 
   const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
   const outOfStock = products.filter((p) => p.stock === 0);

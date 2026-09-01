@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { hotelMenu } from '@/mocks/hospitality';
 import { customers } from '@/mocks/customers';
 import { categories as productCategories, products, type Tone } from '@/mocks/products';
 import { addSale } from '@/utils/salesStore';
-import { getDemoType, getSession , useSession} from '@/utils/session';
+import { getDemoType, getSession } from '@/utils/session';
 import { formatMoney } from '@/utils/format';
 import { buildReceiptCanvas, downloadReceiptImage, type ReceiptPayload } from '@/utils/receipt';
 
@@ -53,7 +53,7 @@ const paymentMethods = [
 export default function PosSale() {
   const session = getSession();
   const type = getDemoType();
-  const session = useSession();
+  const business = { posId: 'POS001', businessName: 'Nyumbani POS', address: 'Nairobi, Kenya', phone: '+254 700 000000' };
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -164,7 +164,7 @@ export default function PosSale() {
       id: `s-${Date.now()}`,
       receiptNo,
       date: saleDate,
-      cashier: session?.name,
+      cashier: session?.name || 'Cashier',
       customer: customer.name,
       items: cart.map((line) => ({
         productId: line.item.id,
@@ -190,7 +190,7 @@ export default function PosSale() {
   const buildPayload = (): ReceiptPayload => ({
     receiptNo: receipt?.receiptNo ?? '',
     date: receipt?.date ?? new Date().toISOString(),
-    cashier: session?.name,
+    cashier: session?.name || 'Cashier',
     customer: receipt?.customer ?? '',
     businessName: business.businessName,
     address: business.address,

@@ -38,11 +38,11 @@ const listingTone: Record<string, string> = {
 };
 
 export default function Marketplace() {
-  const session = useSession();
   const [tab, setTab] = useState<Tab>('overview');
   const [vendors, setVendors] = useState<Vendor[]>(marketplaceVendors);
   const [orderFilter, setOrderFilter] = useState('All');
   const [category, setCategory] = useState('All');
+  const session = { businessName: 'Your Business' };
 
   const activeVendors = vendors.filter((vendor) => vendor.status === 'Active').length;
   const grossSales = vendors.reduce((sum, vendor) => sum + vendor.sales, 0);
