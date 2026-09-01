@@ -788,6 +788,7 @@ export default function AdminPage() {
                                 subscription_details: subDetails,
                               }).eq('id', u.id);
                               setUsers(users.map(x => x.id === u.id ? { ...x, account_type: newType, subscription_expires_at: expiresStr, subscription_details: subDetails } : x));
+                              alert(`✓ Added "${newType}" account type to ${u.name} (expires ${expiresAt.toLocaleDateString()})`);
                             } else {
                               const newExtras = [...(u.extra_account_types || []), newType];
                               await supabaseAdmin.from('users').update({
@@ -795,6 +796,7 @@ export default function AdminPage() {
                                 subscription_details: subDetails,
                               }).eq('id', u.id);
                               setUsers(users.map(x => x.id === u.id ? { ...x, extra_account_types: newExtras, subscription_details: subDetails } : x));
+                              alert(`✓ Added "${newType}" account type to ${u.name} (expires ${expiresAt.toLocaleDateString()})`);
                             }
                             e.target.value = '';
                           }}
