@@ -1,23 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '@/components/base/PageHeader';
 import Modal from '@/components/base/Modal';
-import { products as seedProducts, type Product } from '@/mocks/products';
-import { stockMovements as seedMovements, movementTypeTones, type MovementType, type StockMovement } from '@/mocks/inventory';
+import { supabase } from '@/utils/supabaseClient';
 import { formatMoney, formatDate, formatTime } from '@/utils/format';
 import { inputCls, labelCls, primaryBtn, ghostBtn } from '@/utils/ui';
 
+type MovementType = 'Sale' | 'Restock' | 'Adjustment' | 'Damaged' | 'Return';
+
+interface Product {
+  id: string;
+  product_id: string;
+  name: string;
+  stock: number;
+  min_stock: number;
+  buying_price: number;
+  selling_price: number;
+}
+
+interface StockMovement {
+  id: string;
+  movement_id: string;
+  date: string;
+  product_id: string;
+  movement_type: MovementType;
+  reason: string;
+  quantity: number;
+  prev_stock: number;
+  new_stock: number;
+}
+
+const movementTypeTones: Record<MovementType, string> = {
+  Sale: 'bg-primary-100 text-primary-700',
+  Restock: 'bg-primary-100 text-primary-700',
+  Adjustment: 'bg-secondary-100 text-secondary-700',
+  Damaged: 'bg-accent-100 text-accent-700',
+  Return: 'bg-accent-100 text-accent-700',
+};
+
 export default function Inventory() {
-  const [items, setItems] = useState<Product[]>(seedProducts);
-  const [movements, setMovements] = useState<StockMovement[]>(seedMovements);
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Product[]>([]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
   const [adjustOpen, setAdjustOpen] = useState(false);
-  const [adjustProduct, setAdjustProduct] = useState(seedProducts[0].id);
+  const [adjustProduct, setAdjustProduct] = useState('');
   const [qty, setQty] = useState('');
   const [type, setType] = useState<MovementType>('Restock');
   const [reason, setReason] = useState('');
 
-  const lowStock = items.filter((p) => p.stock > 0 && p.stock <= p.minStock);
+  useEffect(() => {
+    loadInventoryData();
+  }, []);
+
+  async function loadInventoryData() {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load products
+      const { data: productsData } = await supabase
+        .from('pos_products')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('name');
+
+      if (productsData) {
+        setItems(productsData);
+        if (productsData.length > 0) {
+          setAdjustProduct(productsData[0].id);
+        }
+      }
+
+      // Load recent stock movements
+      const { data: movementsData } = await supabase
+        .from('pos_stock_movements')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(20);
+
+      if (movementsData) {
+        setMovements(movementsData);
+      }
+    } catch (error) {
+      console.error('Failed to load inventory:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const lowStock = items.filter((p) => p.stock > 0 && p.stock <= p.min_stock);
   const outOfStock = items.filter((p) => p.stock === 0);
-  const stockValue = items.reduce((sum, p) => sum + p.stock * p.buyingPrice, 0);
+  const stockValue = items.reduce((sum, p) => sum + p.stock * p.buying_price, 0);
 
   const stats = [
     { label: 'Stock Value', value: formatMoney(stockValue), icon: 'ri-coins-line', tone: 'bg-primary-100 text-primary-700' },
@@ -26,35 +101,61 @@ export default function Inventory() {
     { label: 'Movements', value: String(movements.length), icon: 'ri-swap-line', tone: 'bg-secondary-100 text-secondary-700' },
   ];
 
-  const applyAdjustment = () => {
+  const applyAdjustment = async () => {
     const product = items.find((p) => p.id === adjustProduct);
     if (!product || !qty) return;
+    
     const delta = Number(qty) || 0;
     if (delta === 0) return;
-    const effectiveType: MovementType = delta > 0 ? 'Restock' : type === 'Restock' ? 'Adjustment' : type;
-    const newStock = Math.max(0, product.stock + delta);
-    const movement: StockMovement = {
-      id: `mv-${Date.now()}`,
-      date: new Date().toISOString(),
-      product: product.name,
-      type: effectiveType,
-      reason: reason.trim() || (delta > 0 ? 'Manual restock' : 'Manual adjustment'),
-      qty: delta,
-      prevStock: product.stock,
-      newStock,
-      user: 'Grace Wanjiru',
-    };
-    setItems((prev) => prev.map((p) => (p.id === adjustProduct ? { ...p, stock: newStock } : p)));
-    setMovements((prev) => [movement, ...prev]);
-    setAdjustOpen(false);
-    setQty('');
-    setReason('');
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const effectiveType: MovementType = delta > 0 ? 'Restock' : type === 'Restock' ? 'Adjustment' : type;
+      const newStock = Math.max(0, product.stock + delta);
+
+      // Update product stock
+      await supabase
+        .from('pos_products')
+        .update({ stock: newStock })
+        .eq('id', adjustProduct);
+
+      // Create stock movement record
+      await supabase
+        .from('pos_stock_movements')
+        .insert({
+          user_id: user.id,
+          product_id: adjustProduct,
+          movement_id: `mv-${Date.now()}`,
+          movement_type: effectiveType,
+          reason: reason.trim() || (delta > 0 ? 'Manual restock' : 'Manual adjustment'),
+          quantity: delta,
+          prev_stock: product.stock,
+          new_stock: newStock,
+        });
+
+      // Reload data
+      await loadInventoryData();
+      
+      setAdjustOpen(false);
+      setQty('');
+      setReason('');
+    } catch (error) {
+      console.error('Failed to adjust stock:', error);
+      alert('Failed to adjust stock. Please try again.');
+    }
   };
 
   const stockBadge = (p: Product) => {
     if (p.stock === 0) return <span className="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700">Out of stock</span>;
-    if (p.stock <= p.minStock) return <span className="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700">Low stock</span>;
+    if (p.stock <= p.min_stock) return <span className="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700">Low stock</span>;
     return <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">Healthy</span>;
+  };
+
+  const getProductName = (productId: string) => {
+    const product = items.find(p => p.id === productId);
+    return product?.name || 'Unknown Product';
   };
 
   return (
@@ -99,14 +200,24 @@ export default function Inventory() {
                 </tr>
               </thead>
               <tbody>
-                {[...lowStock, ...outOfStock, ...items.filter((p) => p.stock > p.minStock)].slice(0, 10).map((p) => (
-                  <tr key={p.id} className="border-b border-background-100 last:border-0 hover:bg-background-50">
-                    <td className="px-5 py-3 font-medium text-foreground-900">{p.name}</td>
-                    <td className="px-5 py-3 text-foreground-600">{p.stock}</td>
-                    <td className="px-5 py-3 text-foreground-600">{p.minStock}</td>
-                    <td className="px-5 py-3">{stockBadge(p)}</td>
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-8 text-center text-sm text-foreground-500">Loading inventory...</td>
                   </tr>
-                ))}
+                ) : items.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-8 text-center text-sm text-foreground-500">No products yet. Add products to get started.</td>
+                  </tr>
+                ) : (
+                  [...lowStock, ...outOfStock, ...items.filter((p) => p.stock > p.min_stock)].slice(0, 10).map((p) => (
+                    <tr key={p.id} className="border-b border-background-100 last:border-0 hover:bg-background-50">
+                      <td className="px-5 py-3 font-medium text-foreground-900">{p.name}</td>
+                      <td className="px-5 py-3 text-foreground-600">{p.stock}</td>
+                      <td className="px-5 py-3 text-foreground-600">{p.min_stock}</td>
+                      <td className="px-5 py-3">{stockBadge(p)}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -115,24 +226,27 @@ export default function Inventory() {
         <div className="rounded-lg border border-background-200 bg-background-50 p-5">
           <h2 className="font-heading text-base font-bold text-foreground-950">Needs Attention</h2>
           <p className="mb-4 text-xs text-foreground-500">Reorder these soon to avoid empty shelves</p>
-          <div className="space-y-3">
-            {[...outOfStock, ...lowStock].map((p) => (
-              <div key={p.id} className="flex items-center gap-3 rounded-md bg-background-100 p-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent-100 text-accent-700">
-                  <i className="ri-alert-line" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground-900">{p.name}</p>
-                  <p className="text-xs text-foreground-500">
-                    {p.stock === 0 ? 'Out of stock' : `${p.stock} left · min ${p.minStock}`}
-                  </p>
+          {loading ? (
+            <div className="py-8 text-center text-sm text-foreground-500">Loading...</div>
+          ) : [...outOfStock, ...lowStock].length === 0 ? (
+            <div className="py-8 text-center text-sm text-foreground-500">All products have healthy stock levels</div>
+          ) : (
+            <div className="space-y-3">
+              {[...outOfStock, ...lowStock].map((p) => (
+                <div key={p.id} className="flex items-center gap-3 rounded-md bg-background-100 p-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent-100 text-accent-700">
+                    <i className="ri-alert-line" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground-900">{p.name}</p>
+                    <p className="text-xs text-foreground-500">
+                      {p.stock === 0 ? 'Out of stock' : `${p.stock} left · min ${p.min_stock}`}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-            {[...outOfStock, ...lowStock].length === 0 && (
-              <p className="text-sm text-foreground-500">All good — no items need attention.</p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -155,23 +269,33 @@ export default function Inventory() {
               </tr>
             </thead>
             <tbody>
-              {movements.map((m) => (
-                <tr key={m.id} className="border-b border-background-100 last:border-0 hover:bg-background-50">
-                  <td className="px-5 py-3 text-foreground-600">
-                    {formatDate(m.date)} · {formatTime(m.date)}
-                  </td>
-                  <td className="px-5 py-3 font-medium text-foreground-900">{m.product}</td>
-                  <td className="px-5 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${movementTypeTones[m.type]}`}>{m.type}</span>
-                  </td>
-                  <td className="px-5 py-3 text-foreground-600">{m.reason}</td>
-                  <td className={`px-5 py-3 font-semibold ${m.qty > 0 ? 'text-primary-700' : 'text-foreground-700'}`}>
-                    {m.qty > 0 ? '+' : ''}{m.qty}
-                  </td>
-                  <td className="px-5 py-3 text-foreground-600">{m.newStock}</td>
-                  <td className="px-5 py-3 text-foreground-600">{m.user}</td>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-8 text-center text-sm text-foreground-500">Loading movements...</td>
                 </tr>
-              ))}
+              ) : movements.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-8 text-center text-sm text-foreground-500">No stock movements yet</td>
+                </tr>
+              ) : (
+                movements.map((m) => (
+                  <tr key={m.id} className="border-b border-background-100 last:border-0 hover:bg-background-50">
+                    <td className="px-5 py-3 text-foreground-600">
+                      {formatDate(m.date)} · {formatTime(m.date)}
+                    </td>
+                    <td className="px-5 py-3 font-medium text-foreground-900">{getProductName(m.product_id)}</td>
+                    <td className="px-5 py-3">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${movementTypeTones[m.movement_type]}`}>{m.movement_type}</span>
+                    </td>
+                    <td className="px-5 py-3 text-foreground-600">{m.reason}</td>
+                    <td className={`px-5 py-3 font-semibold ${m.quantity > 0 ? 'text-primary-700' : 'text-foreground-700'}`}>
+                      {m.quantity > 0 ? '+' : ''}{m.quantity}
+                    </td>
+                    <td className="px-5 py-3 text-foreground-600">{m.new_stock}</td>
+                    <td className="px-5 py-3 text-foreground-600">Admin</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
