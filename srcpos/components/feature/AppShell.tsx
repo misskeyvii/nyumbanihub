@@ -26,11 +26,36 @@ const backOfficeNav: NavItem[] = [
   { label: 'Help & Support', icon: 'ri-question-line',      path: '/app/help' },
 ];
 
+// Common admin items for shop/hotel/airbnb/marketplace
+const commonAdminNav: NavItem[] = [
+  { label: 'Expenses',     icon: 'ri-wallet-line',          path: '/app/expenses' },
+  { label: 'Reports',      icon: 'ri-bar-chart-line',       path: '/app/reports' },
+  { label: 'Subscription', icon: 'ri-shield-check-line',    path: '/app/subscription' },
+  { label: 'Settings',     icon: 'ri-settings-3-line',      path: '/app/settings' },
+  { label: 'Help & Support', icon: 'ri-question-line',      path: '/app/help' },
+];
+
+// Landlord specific admin items
+const landlordAdminNav: NavItem[] = [
+  { label: 'Rent Payments', icon: 'ri-money-dollar-circle-line', path: '/app/homes' }, // Could be expanded to separate page
+  { label: 'Maintenance',   icon: 'ri-tools-line',           path: '/app/homes' }, // Could be expanded to separate page
+  { label: 'Reports',      icon: 'ri-bar-chart-line',       path: '/app/reports' },
+  { label: 'Expenses',     icon: 'ri-wallet-line',          path: '/app/expenses' },
+  { label: 'Subscription', icon: 'ri-shield-check-line',    path: '/app/subscription' },
+  { label: 'Settings',     icon: 'ri-settings-3-line',      path: '/app/settings' },
+  { label: 'Help & Support', icon: 'ri-question-line',      path: '/app/help' },
+];
+
 const shopNav: NavItem[]        = [{ label: 'Dashboard',           icon: 'ri-dashboard-line',     path: '/app/dashboard' },    ...backOfficeNav];
 const hotelNav: NavItem[]       = [{ label: 'Hotel Dashboard',     icon: 'ri-hotel-bed-line',     path: '/app/hotel' },        ...backOfficeNav];
 const airbnbNav: NavItem[]      = [{ label: 'Airbnb Dashboard',    icon: 'ri-home-5-line',        path: '/app/airbnb' },       ...backOfficeNav];
 const marketplaceNav: NavItem[] = [{ label: 'Marketplace Dashboard', icon: 'ri-store-3-line',     path: '/app/marketplace' },  ...backOfficeNav];
-const homesNav: NavItem[]       = [{ label: 'Homes Dashboard',     icon: 'ri-building-2-line',    path: '/app/homes' },        ...backOfficeNav];
+const homesNav: NavItem[]       = [
+  { label: 'Properties',   icon: 'ri-building-2-line',    path: '/app/homes' },
+  { label: 'Tenants',      icon: 'ri-user-3-line',        path: '/app/homes' },
+  { label: 'Maintenance',  icon: 'ri-tools-line',         path: '/app/homes' },
+  ...landlordAdminNav
+];
 
 const staffNav: NavItem[] = [
   { label: 'New Sale',         icon: 'ri-shopping-cart-line', path: '/app/pos' },
