@@ -73,6 +73,7 @@ const paymentMethods = [
 
 export default function PosSale() {
   const session = getSession();
+  const type = session?.type || 'shop';
   const business = { posId: session?.posId || 'POS', businessName: session?.businessName || 'Nyumbani POS', address: 'Nairobi, Kenya', phone: '+254 700 000000' };
 
   const [loading, setLoading] = useState(true);
@@ -447,25 +448,22 @@ export default function PosSale() {
                 </button>
                 {customerOpen && (
                   <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-lg border border-background-200 bg-background-50 p-1.5 shadow-lg">
-                    {customers.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => {
-                          setCustomer(c);
-                          setCustomerOpen(false);
-                        }}
+                    <button
+                      key={customer.id}
+                      type="button"
+                      onClick={() => {
+                        setCustomerOpen(false);
+                      }}
                         className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-foreground-700 hover:bg-background-100"
                       >
                         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary-100 text-xs font-bold text-secondary-700">
-                          {c.name.charAt(0)}
+                          {customer.name.charAt(0)}
                         </span>
-                        <span className="flex-1 truncate">{c.name}</span>
-                        {customer.id === c.id && <i className="ri-check-line text-primary-600" />}
+                        <span className="flex-1 truncate">{customer.name}</span>
+                        <i className="ri-check-line text-primary-600" />
                       </button>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  )}
               </div>
             </div>
 

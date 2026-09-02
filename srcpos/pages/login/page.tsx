@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Modal from '@/components/base/Modal';
-import { signIn, homePathForUser } from '@/utils/auth';
+import { signIn, homePathForUser, hydrateSession } from '@/utils/auth';
+import { supabase } from '@/utils/supabaseClient';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -12,21 +13,49 @@ export default function Login() {
   const [email, setEmail] = useState(emailFromParams || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [requestOpen, setRequestOpen] = useState(false);
 
+  // Check if user is already logged in on nyumbanilink.com
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user) {
+          // User already has a session, check if they have POS access
+          const user = await hydrateSession();
+          if (user) {
+            // Valid session with POS access, redirect to dashboard
+            navigate(homePathForUser(user), { replace: true });
+          } else {
+            // Has session but no POS access, show login with error
+            setError('Your account does not have an active POS subscription. Please subscribe to access the POS system.');
+            setLoading(false);
+          }
+        } else {
+          // No existing session, show login form
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Session check error:', err);
+        setLoading(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [navigate]);
+
   // Auto-focus password if email is prefilled from main app
   useEffect(() => {
-    if (emailFromParams && shouldRedirect) {
-      // If redirected from main app, show a message that they can use same credentials
+    if (emailFromParams && shouldRedirect && !loading) {
       const timer = setTimeout(() => {
         const passwordInput = document.getElementById('password');
         if (passwordInput) passwordInput.focus();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [emailFromParams, shouldRedirect]);
+  }, [emailFromParams, shouldRedirect, loading]);
 
   const signInAs = async (loginEmail: string, loginPassword: string) => {
     setLoading(true);
@@ -43,10 +72,58 @@ export default function Login() {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      // Determine the correct redirect URL
+      let redirectUrl: string;
+      
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        redirectUrl = 'http://localhost:3002';
+      } else if (window.location.hostname.includes('pos.')) {
+        redirectUrl = `${window.location.protocol}//${window.location.host}`;
+      } else {
+        redirectUrl = window.location.origin;
+      }
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Unable to sign in with Google. Please try again.',
+      );
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     void signInAs(email, password);
   };
+
+  // Show loading state while checking session
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+            <i className="ri-loader-4-line animate-spin text-primary-600 text-2xl" />
+          </div>
+          <p className="text-sm text-foreground-600">Checking your session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background-50">
@@ -205,6 +282,32 @@ export default function Login() {
                 ) : (
                   'Sign in'
                 )}
+              </button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-background-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-background-50 text-foreground-500">Or continue with</span>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={signInWithGoogle}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-background-300 rounded-md text-foreground-700 hover:bg-background-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#4285F4" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span className="text-sm font-medium">Sign in with Google</span>
               </button>
             </div>
           </form>

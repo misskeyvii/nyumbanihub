@@ -49,11 +49,15 @@ const hotelNav: NavItem[]       = [{ label: 'Hotel Dashboard',     icon: 'ri-hot
 const airbnbNav: NavItem[]      = [{ label: 'Airbnb Dashboard',    icon: 'ri-home-5-line',        path: '/app/airbnb' },       ...backOfficeNav];
 const marketplaceNav: NavItem[] = [{ label: 'Marketplace Dashboard', icon: 'ri-store-3-line',     path: '/app/marketplace' },  ...backOfficeNav];
 const homesNav: NavItem[]       = [
-  { label: 'Properties',   icon: 'ri-building-2-line',    path: '/app/homes' },
-  { label: 'Tenants',      icon: 'ri-user-3-line',        path: '/app/homes' },
-  { label: 'Maintenance',  icon: 'ri-tools-line',         path: '/app/homes' },
-  { label: 'Rent Payments', icon: 'ri-money-dollar-circle-line', path: '/app/homes' },
-  ...landlordAdminNav
+  { label: 'Properties',   icon: 'ri-building-2-line',    path: '/app/landlord-properties' },
+  { label: 'Tenants',      icon: 'ri-user-3-line',        path: '/app/landlord-tenants' },
+  { label: 'Maintenance',  icon: 'ri-tools-line',         path: '/app/landlord-maintenance' },
+  { label: 'Rent Payments', icon: 'ri-money-dollar-circle-line', path: '/app/landlord-rent-payments' },
+  { label: 'Reports',      icon: 'ri-bar-chart-line',       path: '/app/reports' },
+  { label: 'Expenses',     icon: 'ri-wallet-line',          path: '/app/expenses' },
+  { label: 'Subscription', icon: 'ri-shield-check-line',    path: '/app/subscription' },
+  { label: 'Settings',     icon: 'ri-settings-3-line',      path: '/app/settings' },
+  { label: 'Help & Support', icon: 'ri-question-line',      path: '/app/help' },
 ];
 
 const staffNav: NavItem[] = [

@@ -22,6 +22,10 @@ import Marketplace from '@/pages/marketplace/page';
 import Homes from '@/pages/homes/page';
 import SalesHistory from '@/pages/sales-history/page';
 import Checkin from '@/pages/checkin/page';
+import LandlordProperties from '@/pages/landlord-properties/page';
+import LandlordTenants from '@/pages/landlord-tenants/page';
+import LandlordMaintenance from '@/pages/landlord-maintenance/page';
+import LandlordRentPayments from '@/pages/landlord-rent-payments/page';
 
 const routes: RouteObject[] = [
   {
@@ -57,6 +61,10 @@ const routes: RouteObject[] = [
       { path: 'airbnb', element: <Airbnb /> },
       { path: 'marketplace', element: <Marketplace /> },
       { path: 'homes', element: <Homes /> },
+      { path: 'landlord-properties', element: <LandlordProperties /> },
+      { path: 'landlord-tenants', element: <LandlordTenants /> },
+      { path: 'landlord-maintenance', element: <LandlordMaintenance /> },
+      { path: 'landlord-rent-payments', element: <LandlordRentPayments /> },
       { path: 'sales-history', element: <SalesHistory /> },
       { path: 'checkin', element: <Checkin /> },
     ],

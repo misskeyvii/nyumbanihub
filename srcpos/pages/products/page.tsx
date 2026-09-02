@@ -317,7 +317,7 @@ export default function Products() {
 
   const exportCsv = () => {
     const header = ['Name', 'SKU', 'Barcode', 'Category', 'Selling Price', 'Stock'];
-    const rows = filtered.map((p) => [p.name, p.sku, p.barcode, p.category, String(p.sellingPrice), String(p.stock)]);
+    const rows = filtered.map((p) => [p.name, p.sku, p.barcode, p.category_id || '', String(p.selling_price), String(p.stock)]);
     const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
