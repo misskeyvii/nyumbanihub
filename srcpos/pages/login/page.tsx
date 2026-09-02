@@ -26,30 +26,30 @@ export default function Login() {
         
         const { data } = await supabase.auth.getSession();
         if (data.session?.user) {
-          // User already has a session, check if they have POS access
-          try {
-            const user = await hydrateSession();
-            if (user) {
-              // Valid session with POS access, redirect to dashboard
-              navigate(homePathForUser(user), { replace: true });
-              return;
-            }
-          } catch (err) {
-            // Session exists but not eligible for POS
-            console.error('Session not eligible for POS:', err);
+          // User already has a session, try to get POS session
+          const user = await hydrateSession();
+          if (user) {
+            // Valid session with POS access, redirect to dashboard
+            navigate(homePathForUser(user), { replace: true });
+            return;
+          } else {
+            // Session exists but no POS access
+            setError('Your account does not have an active POS subscription. Please subscribe in your Nyumbani Link profile.');
+            setLoading(false);
+            return;
           }
         }
         
-        // Check URL parameters for redirect from main app
+        // No existing session - check URL parameters for redirect from main app
         const params = new URLSearchParams(window.location.search);
         if (params.get('redirect') === 'true' && params.get('email')) {
           setEmail(params.get('email') || '');
-          // Show message to sign in
         }
         
         setLoading(false);
       } catch (err) {
         console.error('Session check error:', err);
+        // On any error, just show the login form
         setLoading(false);
       }
     };

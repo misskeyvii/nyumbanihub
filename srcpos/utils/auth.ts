@@ -225,9 +225,16 @@ export async function hydrateSession(): Promise<SessionUser | null> {
     if (sessionUser) {
       setSession(sessionUser);
       return sessionUser;
+    } else {
+      // User authenticated but no POS access - return null instead of throwing
+      // This allows the login page to show an error instead of looping
+      clearSession();
+      return null;
     }
   }
 
+  // If user exists in auth but not in users table, return null
+  clearSession();
   return null;
 }
 
