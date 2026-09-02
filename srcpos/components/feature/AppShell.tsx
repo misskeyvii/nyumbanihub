@@ -68,14 +68,27 @@ const hotelStaffNav: NavItem[] = [
 ];
 
 function navFor(type: string, role: 'admin' | 'staff'): NavItem[] {
+  // Debug logging
+  console.log('[navFor] type:', type, 'role:', role);
+  
   if (role === 'staff') return type === 'hotel' ? hotelStaffNav : staffNav;
   switch (type) {
-    case 'hotel':       return hotelNav;
-    case 'airbnb':      return airbnbNav;
-    case 'marketplace': return marketplaceNav;
+    case 'hotel':       
+      console.log('[navFor] returning hotelNav');
+      return hotelNav;
+    case 'airbnb':      
+      console.log('[navFor] returning airbnbNav');
+      return airbnbNav;
+    case 'marketplace': 
+      console.log('[navFor] returning marketplaceNav');
+      return marketplaceNav;
     case 'homes':
-    case 'landlord':    return homesNav;  // Landlord accounts show property management menu
-    default:            return shopNav;
+    case 'landlord':    
+      console.log('[navFor] returning homesNav');
+      return homesNav;
+    default:            
+      console.log('[navFor] returning shopNav (default)');
+      return shopNav;
   }
 }
 
@@ -100,7 +113,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     return null;
   }
   
+  console.log('[SidebarContent] session:', session);
   const navItems  = navFor(session.type, session.role);
+  console.log('[SidebarContent] navItems count:', navItems.length);
 
   const handleLogout = async () => {
     await signOut();
