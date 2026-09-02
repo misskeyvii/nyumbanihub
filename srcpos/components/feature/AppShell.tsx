@@ -73,7 +73,8 @@ function navFor(type: string, role: 'admin' | 'staff'): NavItem[] {
     case 'hotel':       return hotelNav;
     case 'airbnb':      return airbnbNav;
     case 'marketplace': return marketplaceNav;
-    case 'homes':       return homesNav;
+    case 'homes':
+    case 'landlord':    return homesNav;  // Landlord accounts show property management menu
     default:            return shopNav;
   }
 }
