@@ -21,22 +21,33 @@ export default function Login() {
   useEffect(() => {
     const checkExistingSession = async () => {
       try {
+        // Wait a moment for Supabase to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const { data } = await supabase.auth.getSession();
         if (data.session?.user) {
           // User already has a session, check if they have POS access
-          const user = await hydrateSession();
-          if (user) {
-            // Valid session with POS access, redirect to dashboard
-            navigate(homePathForUser(user), { replace: true });
-          } else {
-            // Has session but no POS access, show login with error
-            setError('Your account does not have an active POS subscription. Please subscribe to access the POS system.');
-            setLoading(false);
+          try {
+            const user = await hydrateSession();
+            if (user) {
+              // Valid session with POS access, redirect to dashboard
+              navigate(homePathForUser(user), { replace: true });
+              return;
+            }
+          } catch (err) {
+            // Session exists but not eligible for POS
+            console.error('Session not eligible for POS:', err);
           }
-        } else {
-          // No existing session, show login form
-          setLoading(false);
         }
+        
+        // Check URL parameters for redirect from main app
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('redirect') === 'true' && params.get('email')) {
+          setEmail(params.get('email') || '');
+          // Show message to sign in
+        }
+        
+        setLoading(false);
       } catch (err) {
         console.error('Session check error:', err);
         setLoading(false);
@@ -200,7 +211,7 @@ export default function Login() {
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
                   <i className="ri-information-line mr-1"></i>
-                  Use the same password from your Nyumbani Link account.
+                  Signing in as <strong>{emailFromParams}</strong>. Use your Nyumbani Link password.
                 </p>
               </div>
             )}
