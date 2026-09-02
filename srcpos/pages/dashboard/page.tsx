@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AreaChart,
@@ -9,9 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { getDemoType } from '@/utils/session';
-import { products } from '@/mocks/products';
-import { sales, salesChartData, topProducts } from '@/mocks/sales';
+import { supabase } from '@/utils/supabaseClient';
+import { getSession } from '@/utils/session';
 import { formatCompactMoney, formatMoney, formatTime } from '@/utils/format';
 
 const toneClasses: Record<string, string> = {
@@ -28,22 +27,139 @@ const paymentTones: Record<string, string> = {
 
 export default function Dashboard() {
   const [paymentFilter, setPaymentFilter] = useState('All');
-  const session = { name: 'User', businessName: 'Your Business' };
+  const [loading, setLoading] = useState(true);
+  const [todaySales, setTodaySales] = useState(0);
+  const [todayTransactions, setTodayTransactions] = useState(0);
+  const [todayProfit, setTodayProfit] = useState(0);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [salesChartData, setSalesChartData] = useState<any[]>([]);
+  const [recentSales, setRecentSales] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  
+  const session = getSession();
+  const userId = session?.email; // We'll need actual user ID from auth
 
-  const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.minStock);
-  const outOfStock = products.filter((p) => p.stock === 0);
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  async function loadDashboardData() {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get today's date range
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString();
+
+      // Load today's sales
+      const { data: salesData } = await supabase
+        .from('pos_sales')
+        .select('total, items, payment_method, date')
+        .eq('user_id', user.id)
+        .gte('date', todayStr)
+        .eq('status', 'completed');
+
+      if (salesData) {
+        const total = salesData.reduce((sum, s) => sum + Number(s.total), 0);
+        setTodaySales(total);
+        setTodayTransactions(salesData.length);
+        
+        // Estimate profit (selling price - buying price)
+        let profit = 0;
+        salesData.forEach(sale => {
+          const items = sale.items || [];
+          items.forEach((item: any) => {
+            const itemProfit = (item.unitPrice - (item.buyingPrice || 0)) * item.qty;
+            profit += itemProfit;
+          });
+        });
+        setTodayProfit(profit);
+        setRecentSales(salesData.slice(0, 5));
+      }
+
+      // Load low stock products
+      const { data: productsData } = await supabase
+        .from('pos_products')
+        .select('stock, min_stock')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (productsData) {
+        const lowStock = productsData.filter(p => p.stock <= p.min_stock);
+        setLowStockCount(lowStock.length);
+      }
+
+      // Load last 7 days sales for chart
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { data: weekSales } = await supabase
+        .from('pos_sales')
+        .select('total, date')
+        .eq('user_id', user.id)
+        .gte('date', sevenDaysAgo.toISOString())
+        .eq('status', 'completed');
+
+      if (weekSales) {
+        // Group by day
+        const dayMap: Record<string, number> = {};
+        weekSales.forEach(sale => {
+          const day = new Date(sale.date).toLocaleDateString('en-US', { weekday: 'short' });
+          dayMap[day] = (dayMap[day] || 0) + Number(sale.total);
+        });
+        
+        const chartData = Object.entries(dayMap).map(([day, sales]) => ({
+          day,
+          sales
+        }));
+        setSalesChartData(chartData);
+      }
+
+      // Load top products
+      const { data: allSales } = await supabase
+        .from('pos_sales')
+        .select('items')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .gte('date', todayStr);
+
+      if (allSales) {
+        const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
+        allSales.forEach(sale => {
+          const items = sale.items || [];
+          items.forEach((item: any) => {
+            if (!productSales[item.productId]) {
+              productSales[item.productId] = { name: item.name, qty: 0, revenue: 0 };
+            }
+            productSales[item.productId].qty += item.qty;
+            productSales[item.productId].revenue += item.unitPrice * item.qty;
+          });
+        });
+        
+        const sorted = Object.values(productSales)
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
+        setTopProducts(sorted);
+      }
+
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const stats = [
-    { label: "Today's Sales", value: formatCompactMoney(48250), delta: '+12.5%', up: true, icon: 'ri-money-dollar-circle-line', tone: 'primary' },
-    { label: "Today's Transactions", value: '127', delta: '+8', up: true, icon: 'ri-exchange-line', tone: 'accent' },
-    { label: 'Profit Estimate', value: formatCompactMoney(16890), delta: '+6.2%', up: true, icon: 'ri-line-chart-line', tone: 'secondary' },
-    { label: 'Low Stock Items', value: String(lowStock.length + outOfStock.length), delta: 'attention', up: false, icon: 'ri-alert-line', tone: 'accent' },
+    { label: "Today's Sales", value: loading ? '...' : formatCompactMoney(todaySales), delta: '+12.5%', up: true, icon: 'ri-money-dollar-circle-line', tone: 'primary' },
+    { label: "Today's Transactions", value: loading ? '...' : String(todayTransactions), delta: `+${todayTransactions}`, up: true, icon: 'ri-exchange-line', tone: 'accent' },
+    { label: 'Profit Estimate', value: loading ? '...' : formatCompactMoney(todayProfit), delta: '+6.2%', up: true, icon: 'ri-line-chart-line', tone: 'secondary' },
+    { label: 'Low Stock Items', value: loading ? '...' : String(lowStockCount), delta: lowStockCount > 0 ? 'attention' : 'good', up: false, icon: 'ri-alert-line', tone: 'accent' },
   ];
 
-  const filteredSales =
-    paymentFilter === 'All'
-      ? sales
-      : sales.filter((s) => s.paymentMethod === paymentFilter);
+  const filteredSales = recentSales;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -154,27 +270,33 @@ export default function Dashboard() {
         <div className="rounded-lg border border-background-200 bg-background-50 p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-heading text-base font-bold text-foreground-950">Top Products</h2>
-            <span className="text-xs font-medium text-primary-700">This week</span>
+            <span className="text-xs font-medium text-primary-700">Today</span>
           </div>
-          <div className="space-y-3">
-            {topProducts.map((product, index) => (
-              <div key={product.id} className="flex items-center gap-3">
-                <span className="w-5 text-center font-heading text-sm font-bold text-foreground-400">
-                  {index + 1}
-                </span>
-                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${toneClasses[product.tone]}`}>
-                  <i className="ri-shopping-bag-line" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground-900">{product.name}</p>
-                  <p className="text-xs text-foreground-500">{product.units} units sold</p>
+          {loading ? (
+            <div className="py-8 text-center text-sm text-foreground-500">Loading...</div>
+          ) : topProducts.length === 0 ? (
+            <div className="py-8 text-center text-sm text-foreground-500">No sales yet today</div>
+          ) : (
+            <div className="space-y-3">
+              {topProducts.map((product, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <span className="w-5 text-center font-heading text-sm font-bold text-foreground-400">
+                    {index + 1}
+                  </span>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-100 text-primary-700">
+                    <i className="ri-shopping-bag-line" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground-900">{product.name}</p>
+                    <p className="text-xs text-foreground-500">{product.qty} units sold</p>
+                  </div>
+                  <span className="whitespace-nowrap text-sm font-semibold text-foreground-900">
+                    {formatCompactMoney(product.revenue)}
+                  </span>
                 </div>
-                <span className="whitespace-nowrap text-sm font-semibold text-foreground-900">
-                  {formatCompactMoney(product.revenue)}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -211,22 +333,36 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {filteredSales.map((sale) => (
-                <tr key={sale.id} className="border-b border-background-100 last:border-0 hover:bg-background-50">
-                  <td className="px-5 py-3 font-medium text-foreground-900">{sale.receiptNo}</td>
-                  <td className="px-5 py-3 text-foreground-600">{formatTime(sale.date)}</td>
-                  <td className="px-5 py-3 text-foreground-600">{sale.cashier}</td>
-                  <td className="px-5 py-3 text-foreground-600">{sale.customer}</td>
-                  <td className="px-5 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${paymentTones[sale.paymentMethod] || 'bg-secondary-100 text-secondary-700'}`}>
-                      {sale.paymentMethod}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right font-semibold text-foreground-950">
-                    {formatMoney(sale.total)}
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-foreground-500">
+                    Loading transactions...
                   </td>
                 </tr>
-              ))}
+              ) : filteredSales.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-foreground-500">
+                    No transactions yet today
+                  </td>
+                </tr>
+              ) : (
+                filteredSales.map((sale) => (
+                  <tr key={sale.id} className="border-b border-background-100 last:border-0 hover:bg-background-50">
+                    <td className="px-5 py-3 font-medium text-foreground-900">{sale.receipt_no || 'N/A'}</td>
+                    <td className="px-5 py-3 text-foreground-600">{formatTime(sale.date)}</td>
+                    <td className="px-5 py-3 text-foreground-600">{sale.cashier || 'N/A'}</td>
+                    <td className="px-5 py-3 text-foreground-600">{sale.customer_name || 'Walking Customer'}</td>
+                    <td className="px-5 py-3">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${paymentTones[sale.payment_method] || 'bg-secondary-100 text-secondary-700'}`}>
+                        {sale.payment_method || 'Cash'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right font-semibold text-foreground-950">
+                      {formatMoney(sale.total)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
