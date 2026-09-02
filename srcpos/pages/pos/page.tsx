@@ -1,22 +1,43 @@
-import { useState, useMemo } from 'react';
-import { hotelMenu } from '@/mocks/hospitality';
-import { customers } from '@/mocks/customers';
-import { categories as productCategories, products, type Tone } from '@/mocks/products';
-import { addSale } from '@/utils/salesStore';
-import { getDemoType, getSession } from '@/utils/session';
+import { useState, useMemo, useEffect } from 'react';
+import { supabase } from '@/utils/supabaseClient';
+import { getSession } from '@/utils/session';
 import { formatMoney } from '@/utils/format';
 import { buildReceiptCanvas, downloadReceiptImage, type ReceiptPayload } from '@/utils/receipt';
 
+type Tone = 'primary' | 'accent' | 'secondary';
+
+interface Category {
+  id: string;
+  category_id: string;
+  name: string;
+  icon: string;
+  tone: Tone;
+}
+
+interface Product {
+  id: string;
+  product_id: string;
+  name: string;
+  selling_price: number;
+  buying_price: number;
+  stock: number;
+  min_stock: number;
+  category_id: string;
+  status: string;
+}
+
 interface Sellable {
   id: string;
+  productId: string;
   name: string;
   price: number;
+  buyingPrice: number;
   category: string;
   available: boolean;
   icon: string;
   tone: Tone;
-  stock?: number;
-  minStock?: number;
+  stock: number;
+  minStock: number;
 }
 
 interface CartLine {
@@ -52,56 +73,86 @@ const paymentMethods = [
 
 export default function PosSale() {
   const session = getSession();
-  const type = getDemoType();
-  const business = { posId: 'POS001', businessName: 'Nyumbani POS', address: 'Nairobi, Kenya', phone: '+254 700 000000' };
+  const business = { posId: session?.posId || 'POS', businessName: session?.businessName || 'Nyumbani POS', address: 'Nairobi, Kenya', phone: '+254 700 000000' };
 
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [customer, setCustomer] = useState(customers[0]);
+  const [customer, setCustomer] = useState({ id: 'walk-in', name: 'Walking Customer' });
   const [customerOpen, setCustomerOpen] = useState(false);
   const [discount, setDiscount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [cashReceived, setCashReceived] = useState('');
   const [receipt, setReceipt] = useState<Receipt | null>(null);
 
-  const categoryTone = useMemo(() => {
-    const map: Record<string, Tone> = {};
-    productCategories.forEach((category) => {
-      map[category.name] = category.tone;
-    });
-    return map;
+  useEffect(() => {
+    loadProductsAndCategories();
   }, []);
 
-  const sellables: Sellable[] = useMemo(() => {
-    if (type === 'hotel') {
-      return hotelMenu.map((item) => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        category: item.category,
-        available: item.available,
-        icon: item.icon,
-        tone: item.category === 'Food' ? 'accent' : 'primary',
-      }));
+  async function loadProductsAndCategories() {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Load categories
+      const { data: categoriesData } = await supabase
+        .from('pos_categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (categoriesData) {
+        setCategories(categoriesData);
+      }
+
+      // Load products
+      const { data: productsData } = await supabase
+        .from('pos_products')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (productsData) {
+        setProducts(productsData);
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+    } finally {
+      setLoading(false);
     }
+  }
+
+  const categoryTone = useMemo(() => {
+    const map: Record<string, Tone> = {};
+    categories.forEach((category) => {
+      map[category.category_id] = category.tone;
+    });
+    return map;
+  }, [categories]);
+
+  const sellables: Sellable[] = useMemo(() => {
     return products.map((product) => ({
       id: product.id,
+      productId: product.product_id,
       name: product.name,
-      price: product.sellingPrice,
-      category: product.category,
+      price: product.selling_price,
+      buyingPrice: product.buying_price,
+      category: product.category_id || 'Other',
       available: product.stock > 0,
       icon: 'ri-shopping-bag-line',
-      tone: categoryTone[product.category] || 'secondary',
+      tone: categoryTone[product.category_id || ''] || 'secondary',
       stock: product.stock,
-      minStock: product.minStock,
+      minStock: product.min_stock,
     }));
-  }, [type, categoryTone]);
+  }, [products, categoryTone]);
 
   const filterCategories = useMemo(() => {
-    if (type === 'hotel') return ['All', 'Food', 'Drinks'];
-    return ['All', ...productCategories.map((category) => category.name)];
-  }, [type]);
+    return ['All', ...categories.map((category) => category.name)];
+  }, [categories]);
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -144,38 +195,63 @@ export default function PosSale() {
   const cashValue = cashReceived ? parseFloat(cashReceived) || 0 : 0;
   const change = paymentMethod === 'Cash' ? Math.max(0, cashValue - total) : 0;
 
-  const completeSale = () => {
+  const completeSale = async () => {
     if (cart.length === 0) return;
-    const receiptNo = `${business.posId}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const saleDate = new Date().toISOString();
-    setReceipt({
-      receiptNo,
-      date: saleDate,
-      items: cart,
-      subtotal,
-      discount: discountValue,
-      total,
-      paymentMethod,
-      customer: customer.name,
-      cashReceived: cashValue,
-      change,
-    });
-    void addSale({
-      id: `s-${Date.now()}`,
-      receiptNo,
-      date: saleDate,
-      cashier: session?.name || 'Cashier',
-      customer: customer.name,
-      items: cart.map((line) => ({
-        productId: line.item.id,
-        name: line.item.name,
-        qty: line.qty,
-        unitPrice: line.item.price,
-      })),
-      total,
-      paymentMethod,
-      status: 'completed',
-    });
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('You must be logged in to complete a sale');
+        return;
+      }
+
+      const receiptNo = `${business.posId}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const saleDate = new Date().toISOString();
+      
+      // Save sale to database
+      const { error } = await supabase
+        .from('pos_sales')
+        .insert({
+          user_id: user.id,
+          sale_id: `s-${Date.now()}`,
+          receipt_no: receiptNo,
+          cashier: session?.name || 'Cashier',
+          customer_name: customer.name,
+          items: cart.map((line) => ({
+            productId: line.item.productId,
+            name: line.item.name,
+            qty: line.qty,
+            unitPrice: line.item.price,
+            buyingPrice: line.item.buyingPrice,
+          })),
+          total,
+          payment_method: paymentMethod,
+          status: 'completed',
+          date: saleDate,
+        });
+
+      if (error) {
+        console.error('Failed to save sale:', error);
+        alert('Failed to save sale. Please try again.');
+        return;
+      }
+
+      setReceipt({
+        receiptNo,
+        date: saleDate,
+        items: cart,
+        subtotal,
+        discount: discountValue,
+        total,
+        paymentMethod,
+        customer: customer.name,
+        cashReceived: cashValue,
+        change,
+      });
+    } catch (error) {
+      console.error('Sale error:', error);
+      alert('An error occurred while completing the sale');
+    }
   };
 
   const resetSale = () => {
@@ -183,7 +259,7 @@ export default function PosSale() {
     setCart([]);
     setDiscount('');
     setCashReceived('');
-    setCustomer(customers[0]);
+    setCustomer({ id: 'walk-in', name: 'Walking Customer' });
     setPaymentMethod('Cash');
   };
 
