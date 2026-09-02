@@ -1,16 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '@/components/base/PageHeader';
 import Modal from '@/components/base/Modal';
-import { products as seedProducts, categories, type Product } from '@/mocks/products';
-import { suppliers } from '@/mocks/suppliers';
+import { supabase } from '@/utils/supabaseClient';
 import { formatMoney } from '@/utils/format';
 import { inputCls, labelCls, primaryBtn, ghostBtn } from '@/utils/ui';
+
+interface Product {
+  id: string;
+  product_id: string;
+  name: string;
+  sku: string;
+  barcode: string;
+  category_id: string;
+  brand: string;
+  buying_price: number;
+  selling_price: number;
+  stock: number;
+  min_stock: number;
+  supplier: string;
+  status: 'active' | 'inactive';
+}
+
+interface Category {
+  id: string;
+  category_id: string;
+  name: string;
+}
 
 interface FormState {
   name: string;
   sku: string;
   barcode: string;
-  category: string;
+  category_id: string;
   brand: string;
   buyingPrice: string;
   sellingPrice: string;
@@ -24,13 +45,13 @@ const emptyForm: FormState = {
   name: '',
   sku: '',
   barcode: '',
-  category: categories[0].name,
+  category_id: '',
   brand: '',
   buyingPrice: '',
   sellingPrice: '',
-  stock: '',
-  minStock: '',
-  supplier: suppliers[0]?.name || '',
+  stock: '0',
+  minStock: '10',
+  supplier: '',
   status: 'active',
 };
 
@@ -38,13 +59,13 @@ const toForm = (p: Product): FormState => ({
   name: p.name,
   sku: p.sku === '—' ? '' : p.sku,
   barcode: p.barcode === '—' ? '' : p.barcode,
-  category: p.category,
+  category_id: p.category_id,
   brand: p.brand === '—' ? '' : p.brand,
-  buyingPrice: String(p.buyingPrice),
-  sellingPrice: String(p.sellingPrice),
+  buyingPrice: String(p.buying_price),
+  sellingPrice: String(p.selling_price),
   stock: String(p.stock),
-  minStock: String(p.minStock),
-  supplier: p.supplier,
+  minStock: String(p.min_stock),
+  supplier: p.supplier || '',
   status: p.status,
 });
 
@@ -52,10 +73,12 @@ function ProductForm({
   initial,
   onCancel,
   onSave,
+  categories,
 }: {
   initial: FormState;
   onCancel: () => void;
   onSave: (f: FormState) => void;
+  categories: Category[];
 }) {
   const [form, setForm] = useState<FormState>(initial);
   const set = (key: keyof FormState, value: string) =>
@@ -69,10 +92,11 @@ function ProductForm({
           <input className={inputCls} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Coca Cola 500ml" />
         </div>
         <div>
-          <label className={labelCls}>Category</label>
-          <select className={inputCls} value={form.category} onChange={(e) => set('category', e.target.value)}>
+          <label className={labelCls}>Category *</label>
+          <select className={inputCls} value={form.category_id} onChange={(e) => set('category_id', e.target.value)}>
+            <option value="">Select category</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.name}>{c.name}</option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>
@@ -90,11 +114,7 @@ function ProductForm({
         </div>
         <div>
           <label className={labelCls}>Supplier</label>
-          <select className={inputCls} value={form.supplier} onChange={(e) => set('supplier', e.target.value)}>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.name}>{s.name}</option>
-            ))}
-          </select>
+          <input className={inputCls} value={form.supplier} onChange={(e) => set('supplier', e.target.value)} placeholder="Supplier name" />
         </div>
         <div>
           <label className={labelCls}>Buying price (KSh)</label>
@@ -137,7 +157,7 @@ function ProductForm({
         <button
           type="button"
           onClick={() => {
-            if (form.name.trim() && form.sellingPrice) onSave(form);
+            if (form.name.trim() && form.sellingPrice && form.category_id) onSave(form);
           }}
           className={primaryBtn}
         >
@@ -149,7 +169,9 @@ function ProductForm({
 }
 
 export default function Products() {
-  const [items, setItems] = useState<Product[]>(seedProducts);
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [status, setStatus] = useState('All');
@@ -157,41 +179,140 @@ export default function Products() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
 
+  useEffect(() => {
+    loadProducts();
+    loadCategories();
+  }, []);
+
+  async function loadProducts() {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('pos_products')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+
+      if (data) {
+        setItems(data);
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadCategories() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('pos_categories')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+
+      if (data) {
+        setCategories(data);
+        if (data.length > 0 && !emptyForm.category_id) {
+          emptyForm.category_id = data[0].id;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  }
+
+  const getCategoryName = (categoryId: string) => {
+    const cat = categories.find(c => c.id === categoryId);
+    return cat?.name || 'Uncategorized';
+  };
+
   const filtered = items.filter((p) => {
     const q = query.toLowerCase();
     const matchesQuery =
       !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.barcode.includes(q);
-    const matchesCategory = category === 'All' || p.category === category;
+    const matchesCategory = category === 'All' || p.category_id === category;
     const matchesStatus = status === 'All' || p.status === status;
     return matchesQuery && matchesCategory && matchesStatus;
   });
 
-  const lowStock = items.filter((p) => p.stock > 0 && p.stock <= p.minStock);
+  const lowStock = items.filter((p) => p.stock > 0 && p.stock <= p.min_stock);
   const outOfStock = items.filter((p) => p.stock === 0);
-  const stockValue = items.reduce((sum, p) => sum + p.stock * p.buyingPrice, 0);
+  const stockValue = items.reduce((sum, p) => sum + p.stock * p.buying_price, 0);
 
-  const handleSave = (f: FormState) => {
-    const data: Product = {
-      id: editing?.id || `p-${Date.now()}`,
-      name: f.name.trim(),
-      sku: f.sku.trim() || '—',
-      barcode: f.barcode.trim() || '—',
-      category: f.category,
-      brand: f.brand.trim() || '—',
-      buyingPrice: Number(f.buyingPrice) || 0,
-      sellingPrice: Number(f.sellingPrice) || 0,
-      stock: Number(f.stock) || 0,
-      minStock: Number(f.minStock) || 0,
-      supplier: f.supplier,
-      status: f.status,
-    };
-    setItems((prev) => (editing ? prev.map((x) => (x.id === editing.id ? data : x)) : [data, ...prev]));
-    setModalOpen(false);
+  const handleSave = async (f: FormState) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      if (editing) {
+        // Update existing product
+        await supabase
+          .from('pos_products')
+          .update({
+            name: f.name.trim(),
+            sku: f.sku.trim() || '—',
+            barcode: f.barcode.trim() || '—',
+            category_id: f.category_id,
+            brand: f.brand.trim() || '—',
+            buying_price: Number(f.buyingPrice) || 0,
+            selling_price: Number(f.sellingPrice) || 0,
+            stock: Number(f.stock) || 0,
+            min_stock: Number(f.minStock) || 0,
+            supplier: f.supplier.trim() || '',
+            status: f.status,
+          })
+          .eq('id', editing.id);
+      } else {
+        // Create new product
+        await supabase
+          .from('pos_products')
+          .insert({
+            user_id: user.id,
+            product_id: `p-${Date.now()}`,
+            name: f.name.trim(),
+            sku: f.sku.trim() || '—',
+            barcode: f.barcode.trim() || '—',
+            category_id: f.category_id,
+            brand: f.brand.trim() || '—',
+            buying_price: Number(f.buyingPrice) || 0,
+            selling_price: Number(f.sellingPrice) || 0,
+            stock: Number(f.stock) || 0,
+            min_stock: Number(f.minStock) || 0,
+            supplier: f.supplier.trim() || '',
+            status: f.status,
+          });
+      }
+
+      await loadProducts();
+      setModalOpen(false);
+    } catch (error) {
+      console.error('Failed to save product:', error);
+      alert('Failed to save product. Please try again.');
+    }
   };
 
-  const confirmDelete = () => {
-    if (deleting) setItems((prev) => prev.filter((x) => x.id !== deleting.id));
-    setDeleting(null);
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    
+    try {
+      await supabase
+        .from('pos_products')
+        .delete()
+        .eq('id', deleting.id);
+
+      await loadProducts();
+      setDeleting(null);
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      alert('Failed to delete product. Please try again.');
+    }
   };
 
   const exportCsv = () => {
@@ -209,15 +330,15 @@ export default function Products() {
 
   const stockBadge = (p: Product) => {
     if (p.stock === 0) return <span className="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700">Out of stock</span>;
-    if (p.stock <= p.minStock) return <span className="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700">Low</span>;
+    if (p.stock <= p.min_stock) return <span className="rounded-full bg-accent-100 px-2 py-0.5 text-xs font-semibold text-accent-700">Low</span>;
     return <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">In stock</span>;
   };
 
   const stats = [
-    { label: 'Total Products', value: String(items.length), icon: 'ri-price-tag-3-line', tone: 'bg-primary-100 text-primary-700' },
-    { label: 'Stock Value', value: formatMoney(stockValue), icon: 'ri-coins-line', tone: 'bg-secondary-100 text-secondary-700' },
-    { label: 'Low Stock', value: String(lowStock.length), icon: 'ri-alert-line', tone: 'bg-accent-100 text-accent-700' },
-    { label: 'Out of Stock', value: String(outOfStock.length), icon: 'ri-close-circle-line', tone: 'bg-accent-100 text-accent-700' },
+    { label: 'Total Products', value: loading ? '...' : String(items.length), icon: 'ri-price-tag-3-line', tone: 'bg-primary-100 text-primary-700' },
+    { label: 'Stock Value', value: loading ? '...' : formatMoney(stockValue), icon: 'ri-coins-line', tone: 'bg-secondary-100 text-secondary-700' },
+    { label: 'Low Stock', value: loading ? '...' : String(lowStock.length), icon: 'ri-alert-line', tone: 'bg-accent-100 text-accent-700' },
+    { label: 'Out of Stock', value: loading ? '...' : String(outOfStock.length), icon: 'ri-close-circle-line', tone: 'bg-accent-100 text-accent-700' },
   ];
 
   return (
@@ -268,7 +389,7 @@ export default function Products() {
           <div className="flex flex-wrap gap-2">
             <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-10 rounded-md border border-background-200 bg-background-50 px-3 text-sm text-foreground-900 focus:border-primary-400 focus:outline-none">
               <option value="All">All categories</option>
-              {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded-md border border-background-200 bg-background-50 px-3 text-sm text-foreground-900 focus:border-primary-400 focus:outline-none">
               <option value="All">All status</option>
@@ -292,35 +413,40 @@ export default function Products() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
-                <tr key={p.id} className="border-b border-background-100 last:border-0 hover:bg-background-50">
-                  <td className="px-5 py-3">
-                    <p className="font-medium text-foreground-900">{p.name}</p>
-                    <p className="text-xs text-foreground-500">{p.sku} · {p.brand}</p>
-                  </td>
-                  <td className="px-5 py-3 text-foreground-600">{p.category}</td>
-                  <td className="px-5 py-3 text-foreground-600">{formatMoney(p.buyingPrice)}</td>
-                  <td className="px-5 py-3 font-semibold text-foreground-900">{formatMoney(p.sellingPrice)}</td>
-                  <td className="px-5 py-3 text-foreground-600">{p.stock}</td>
-                  <td className="px-5 py-3">{stockBadge(p)}</td>
-                  <td className="px-5 py-3">
-                    <div className="flex justify-end gap-1">
-                      <button type="button" onClick={() => { setEditing(p); setModalOpen(true); }} className="flex h-8 w-8 items-center justify-center rounded-md text-foreground-500 hover:bg-background-100 hover:text-foreground-900" title="Edit">
-                        <i className="ri-edit-line" />
-                      </button>
-                      <button type="button" onClick={() => setDeleting(p)} className="flex h-8 w-8 items-center justify-center rounded-md text-foreground-500 hover:bg-accent-100 hover:text-accent-700" title="Delete">
-                        <i className="ri-delete-bin-line" />
-                      </button>
-                    </div>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-12 text-center text-foreground-500">Loading products...</td>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-12 text-center text-foreground-500">
                     No products match your filters.
                   </td>
                 </tr>
+              ) : (
+                filtered.map((p) => (
+                  <tr key={p.id} className="border-b border-background-100 last:border-0 hover:bg-background-50">
+                    <td className="px-5 py-3">
+                      <p className="font-medium text-foreground-900">{p.name}</p>
+                      <p className="text-xs text-foreground-500">{p.sku} · {p.brand}</p>
+                    </td>
+                    <td className="px-5 py-3 text-foreground-600">{getCategoryName(p.category_id)}</td>
+                    <td className="px-5 py-3 text-foreground-600">{formatMoney(p.buying_price)}</td>
+                    <td className="px-5 py-3 font-semibold text-foreground-900">{formatMoney(p.selling_price)}</td>
+                    <td className="px-5 py-3 text-foreground-600">{p.stock}</td>
+                    <td className="px-5 py-3">{stockBadge(p)}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex justify-end gap-1">
+                        <button type="button" onClick={() => { setEditing(p); setModalOpen(true); }} className="flex h-8 w-8 items-center justify-center rounded-md text-foreground-500 hover:bg-background-100 hover:text-foreground-900" title="Edit">
+                          <i className="ri-edit-line" />
+                        </button>
+                        <button type="button" onClick={() => setDeleting(p)} className="flex h-8 w-8 items-center justify-center rounded-md text-foreground-500 hover:bg-accent-100 hover:text-accent-700" title="Delete">
+                          <i className="ri-delete-bin-line" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -328,7 +454,7 @@ export default function Products() {
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Product' : 'Add Product'} subtitle="Set the details, price, and stock level." size="lg">
-        <ProductForm initial={editing ? toForm(editing) : emptyForm} onCancel={() => setModalOpen(false)} onSave={handleSave} />
+        <ProductForm initial={editing ? toForm(editing) : emptyForm} onCancel={() => setModalOpen(false)} onSave={handleSave} categories={categories} />
       </Modal>
 
       <Modal open={!!deleting} onClose={() => setDeleting(null)} title="Delete this product?" size="sm">
