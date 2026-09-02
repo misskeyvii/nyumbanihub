@@ -49,7 +49,10 @@ const hotelNav: NavItem[]       = [{ label: 'Hotel Dashboard',     icon: 'ri-hot
 const airbnbNav: NavItem[]      = [{ label: 'Airbnb Dashboard',    icon: 'ri-home-5-line',        path: '/app/airbnb' },       ...backOfficeNav];
 const marketplaceNav: NavItem[] = [{ label: 'Marketplace Dashboard', icon: 'ri-store-3-line',     path: '/app/marketplace' },  ...backOfficeNav];
 const homesNav: NavItem[]       = [
-  { label: 'My Properties',    icon: 'ri-building-2-line',    path: '/app/homes' },
+  { label: 'Properties',   icon: 'ri-building-2-line',    path: '/app/homes' },
+  { label: 'Tenants',      icon: 'ri-user-3-line',        path: '/app/homes' },
+  { label: 'Maintenance',  icon: 'ri-tools-line',         path: '/app/homes' },
+  { label: 'Rent Payments', icon: 'ri-money-dollar-circle-line', path: '/app/homes' },
   ...landlordAdminNav
 ];
 
