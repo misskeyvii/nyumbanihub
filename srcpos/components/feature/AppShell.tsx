@@ -37,8 +37,6 @@ const commonAdminNav: NavItem[] = [
 
 // Landlord specific admin items
 const landlordAdminNav: NavItem[] = [
-  { label: 'Rent Payments', icon: 'ri-money-dollar-circle-line', path: '/app/homes' }, // Could be expanded to separate page
-  { label: 'Maintenance',   icon: 'ri-tools-line',           path: '/app/homes' }, // Could be expanded to separate page
   { label: 'Reports',      icon: 'ri-bar-chart-line',       path: '/app/reports' },
   { label: 'Expenses',     icon: 'ri-wallet-line',          path: '/app/expenses' },
   { label: 'Subscription', icon: 'ri-shield-check-line',    path: '/app/subscription' },
@@ -51,9 +49,7 @@ const hotelNav: NavItem[]       = [{ label: 'Hotel Dashboard',     icon: 'ri-hot
 const airbnbNav: NavItem[]      = [{ label: 'Airbnb Dashboard',    icon: 'ri-home-5-line',        path: '/app/airbnb' },       ...backOfficeNav];
 const marketplaceNav: NavItem[] = [{ label: 'Marketplace Dashboard', icon: 'ri-store-3-line',     path: '/app/marketplace' },  ...backOfficeNav];
 const homesNav: NavItem[]       = [
-  { label: 'Properties',   icon: 'ri-building-2-line',    path: '/app/homes' },
-  { label: 'Tenants',      icon: 'ri-user-3-line',        path: '/app/homes' },
-  { label: 'Maintenance',  icon: 'ri-tools-line',         path: '/app/homes' },
+  { label: 'My Properties',    icon: 'ri-building-2-line',    path: '/app/homes' },
   ...landlordAdminNav
 ];
 
@@ -68,27 +64,14 @@ const hotelStaffNav: NavItem[] = [
 ];
 
 function navFor(type: string, role: 'admin' | 'staff'): NavItem[] {
-  // Debug logging
-  console.log('[navFor] type:', type, 'role:', role);
-  
   if (role === 'staff') return type === 'hotel' ? hotelStaffNav : staffNav;
   switch (type) {
-    case 'hotel':       
-      console.log('[navFor] returning hotelNav');
-      return hotelNav;
-    case 'airbnb':      
-      console.log('[navFor] returning airbnbNav');
-      return airbnbNav;
-    case 'marketplace': 
-      console.log('[navFor] returning marketplaceNav');
-      return marketplaceNav;
+    case 'hotel':       return hotelNav;
+    case 'airbnb':      return airbnbNav;
+    case 'marketplace': return marketplaceNav;
     case 'homes':
-    case 'landlord':    
-      console.log('[navFor] returning homesNav');
-      return homesNav;
-    default:            
-      console.log('[navFor] returning shopNav (default)');
-      return shopNav;
+    case 'landlord':    return homesNav;  // Landlord accounts show property management menu
+    default:            return shopNav;
   }
 }
 
@@ -113,9 +96,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     return null;
   }
   
-  console.log('[SidebarContent] session:', session);
   const navItems  = navFor(session.type, session.role);
-  console.log('[SidebarContent] navItems count:', navItems.length);
 
   const handleLogout = async () => {
     await signOut();
